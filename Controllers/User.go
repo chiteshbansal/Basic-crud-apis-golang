@@ -24,6 +24,13 @@ func GetUsers(c *gin.Context){
 func CreateUser(c *gin.Context){
 	var user Models.User
 	c.BindJSON(&user)
+	valErr := user.Validate();
+	if valErr != nil {
+		fmt.Println(valErr) 
+		c.JSON(http.StatusNotFound,valErr)
+		return 
+	}
+
 	err := Models.CreateUser(&user)
 	fmt.Println("user:",user);
 	if err!=nil {
@@ -45,12 +52,15 @@ func UpdateUser(c *gin.Context){
 		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
 		return
 	}
-	// ojo validation 
-	// testify
-	// convey
-	// gin framework
+
 
 	c.BindJSON(&user)// putting the user data from the body to the user variable
+	valErr := user.Validate();
+	if valErr != nil {
+		fmt.Println(valErr) 
+		c.JSON(http.StatusNotFound,valErr)
+		return 
+	}
 	err = Models.UpdateUser(&user,id)
 
 	if(err !=nil){

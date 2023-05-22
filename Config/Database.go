@@ -19,8 +19,10 @@ func BuildDBConfig() *DBConfig {
   Port:     3306,
   User:     "root",
   Password: "pass123",
-  DBName:   "firstapidb",
+  DBName:   "firstapi",
  }
+
+ 
  return &dbConfig
 }
 func DbURL(dbConfig *DBConfig) string {
