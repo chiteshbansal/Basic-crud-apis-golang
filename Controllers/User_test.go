@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
-	"first-api/Models/"
 )
 
 
@@ -53,30 +52,27 @@ type MockUserStore struct {
 	mock.Mock
 }
 
-func (m *MockUserStore) CreateUser(user *models.User) error {
+func (m *MockUserStore) CreateUser(user *Models.User) ( error) {
 	args := m.Called(user)
 	return args.Error(0)
 }
 
-func (m *MockUserStore) Validate() error {
-	args := m.Called()
+func (m *MockUserStore) Validate(user Models.User) error {
+	args := m.Called(user)
 	return args.Error(0)
 }
 
 func TestCreateUser(t *testing.T) {
 	mockUserStore := new(MockUserStore)
-	user := &models.User{
-		Name: "Test User",
-	}
-
+	user := &Models.User{Name:"test user",Email:"test@gmail.com",Phone:"9999999999",Address:"abcd efgh ijkl"}
 	// Setup Gin
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 
-	router.POST("/user", controllers.NewUserController(mockUserStore))
+	router.POST("/user", NewUserController(mockUserStore))
 
 
-	mockUserStore.On("Validate").Return(nil)
+	mockUserStore.On("Validate",*user).Return(nil)
 	mockUserStore.On("CreateUser", user).Return(nil)
 
 	body, _ := json.Marshal(user)

@@ -26,12 +26,16 @@ func GetUsers(c *gin.Context){
 // 	Validate(user *models.User) error
 // }
 
-func NewUserController(store *Models.UserStore) gin.HandlerFunc {
+type UserStorer interface{
+	CreateUser(user *Models.User) error
+	Validate(user Models.User) error
+}
+func NewUserController(store UserStorer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user Models.User
 		c.BindJSON(&user)
 
-		valErr := store.Validate(&user)
+		valErr := store.Validate(user)
 		if valErr != nil {
 			fmt.Println(valErr) 
 			c.JSON(http.StatusNotFound, valErr)
@@ -39,7 +43,6 @@ func NewUserController(store *Models.UserStore) gin.HandlerFunc {
 		}
 
 		err := store.CreateUser(&user)
-		fmt.Println("user:", user)
 		if err != nil {
 			fmt.Println(err.Error())
 			c.AbortWithStatus(http.StatusNotFound)

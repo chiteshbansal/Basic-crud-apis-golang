@@ -4,6 +4,7 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
+
 type User struct{
 
 	Id uint `json:"id"`
@@ -15,15 +16,6 @@ type User struct{
 
 func (b *User) TableName() string{
 	return "user"
-}
-
-type UserData struct {
-	
-	Id uint `json:"id"`
-	Name string `json:"name"`
-	Email string `json:"email"`
-	Phone string `json:"phone"`
-	Address string `json:"address"`
 }
 
 func (u User) Validate() error {
