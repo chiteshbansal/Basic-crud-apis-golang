@@ -4,6 +4,13 @@ import (
 	"first-api/Models"
 	"testing"
 	"github.com/stretchr/testify/assert"
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/mock"
+	"first-api/Models/"
 )
 
 
@@ -40,3 +47,46 @@ func TestValidateUserData(t *testing.T){
 
 }
 
+
+
+type MockUserStore struct {
+	mock.Mock
+}
+
+func (m *MockUserStore) CreateUser(user *models.User) error {
+	args := m.Called(user)
+	return args.Error(0)
+}
+
+func (m *MockUserStore) Validate() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func TestCreateUser(t *testing.T) {
+	mockUserStore := new(MockUserStore)
+	user := &models.User{
+		Name: "Test User",
+	}
+
+	// Setup Gin
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+
+	router.POST("/user", controllers.NewUserController(mockUserStore))
+
+
+	mockUserStore.On("Validate").Return(nil)
+	mockUserStore.On("CreateUser", user).Return(nil)
+
+	body, _ := json.Marshal(user)
+	req, _ := http.NewRequest(http.MethodPost, "/user", bytes.NewBuffer(body))
+	resp := httptest.NewRecorder()
+
+	// Test
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	mockUserStore.AssertExpectations(t)
+}
