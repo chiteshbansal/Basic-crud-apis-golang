@@ -3,7 +3,31 @@ package Models
 import(
 	"fmt"
 	"first-api/Config"
+	"github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
+
+
+
+
+type UserStore struct{}
+
+func (u *UserStore)CreateUser(user *User) (err error) {
+	if err = Config.DB.Create(user).Error ; err!=nil{
+		return err
+	}
+	return nil
+}
+
+func (us *UserStore) Validate(u *User) error {
+	return  validation.ValidateStruct(&u,validation.Field(&u.Name,validation.Required,validation.Length(5,20)),
+	validation.Field(&u.Email,validation.Required,is.Email)	,
+	validation.Field(&u.Phone, validation.Required,validation.Length(10,10)),
+	validation.Field(&u.Address,validation.Required,validation.Length(10,50)),
+	)
+
+}
+
 
 // get all users Fetch all user data
  func GetAllUsers(user *[]User) (err error){
@@ -21,7 +45,6 @@ import(
 	}
 	return nil
  }
-
 
  // getuserById
 

@@ -21,27 +21,34 @@ func GetUsers(c *gin.Context){
 
 }
 
-func CreateUser(c *gin.Context){
-	var user Models.User
-	c.BindJSON(&user)
-	valErr := user.Validate();
-	if valErr != nil {
-		fmt.Println(valErr) 
-		c.JSON(http.StatusNotFound,valErr)
-		return 
-	}
+// type UserStore interface {
+// 	CreateUser(user *Models.User) error
+// 	Validate(user *models.User) error
+// }
 
-	err := Models.CreateUser(&user)
-	fmt.Println("user:",user);
-	if err!=nil {
-		fmt.Println(err.Error())
-		c.AbortWithStatus(http.StatusNotFound)
-	}else{
-		fmt.Println(user.Name)
-		c.JSON(http.StatusOK,user);
+func NewUserController(store *Models.UserStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var user Models.User
+		c.BindJSON(&user)
+
+		valErr := store.Validate(&user)
+		if valErr != nil {
+			fmt.Println(valErr) 
+			c.JSON(http.StatusNotFound, valErr)
+			return 
+		}
+
+		err := store.CreateUser(&user)
+		fmt.Println("user:", user)
+		if err != nil {
+			fmt.Println(err.Error())
+			c.AbortWithStatus(http.StatusNotFound)
+		} else {
+			fmt.Println(user.Name)
+			c.JSON(http.StatusOK, user)
+		}
 	}
 }
-
 // update user data
 func UpdateUser(c *gin.Context){
 	id:= c.Params.ByName("id")
