@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"fmt"
+	// "fmt"
 	"net/http/httptest"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
@@ -59,17 +59,41 @@ func (m *MockUserStore) CreateUser(user *Models.User) ( error) {
 }
 
 func (m *MockUserStore) Validate(user Models.User) error {
-	fmt.Println("VAlidate called")
 	args := m.Called(user)
 	return args.Error(0)
 }
 
 func (m *MockUserStore) GetAllUsers(users *[]Models.User) error{
-	fmt.Println("GEt all users mock called")
 	args:= m.Called(users)
 	return args.Error(0)
 }
 
+
+func (m *MockUserStore) GetUserByID(user *Models.User, id string) error {
+    args := m.Called(user, id)
+
+    // if the mock is set to return an error, return it
+    if args.Error(0) != nil {
+        return args.Error(0)
+    }
+
+    // otherwise, set the passed user object fields
+    user.Id = 1
+    user.Name = "test user"
+    user.Email = "test@gmail.com"
+    user.Phone = "9999999999"
+    user.Address = "abcd efgh ijkl"
+
+    return nil
+}
+func (m *MockUserStore) UpdateUser(user *Models.User,id string) error {
+	args := m.Called(user,id)
+	return args.Error(0)
+}
+func (m *MockUserStore) DeleteUser(user *Models.User,id string) error {
+	args := m.Called(user,id)
+	return args.Error(0)
+}
 func TestCreateUser(t *testing.T) {
 	mockUserStore := new(MockUserStore)
 	user := &Models.User{Name:"test user",Email:"test@gmail.com",Phone:"9999999999",Address:"abcd efgh ijkl"}
@@ -94,6 +118,7 @@ func TestCreateUser(t *testing.T) {
 
 	mockUserStore.AssertExpectations(t)
 }
+
 func TestGetUsers(t *testing.T) {
 	mockUserStore := new(MockUserStore)
 
@@ -121,4 +146,47 @@ func TestGetUsers(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.Code)
 
 	mockUserStore.AssertExpectations(t)
+}
+
+
+// GetUserByID test function 
+
+func TestGetUserById(t *testing.T) {
+    mockUserStore := new(MockUserStore)
+    user := &Models.User{Id:1, Name:"test user", Email:"test@gmail.com", Phone:"9999999999", Address:"abcd efgh ijkl"}
+
+    // Setup Gin
+    gin.SetMode(gin.TestMode)
+    router := gin.Default()
+
+    router.GET("/user/:id", GetUserByIDController(mockUserStore))
+
+    // Configure the mock to expect a call to GetUserByID with any user object and the id "1", and to return no error.
+    // It should also set the user object's fields to match the fields of the `user` variable.
+    mockUserStore.On("GetUserByID", mock.AnythingOfType("*Models.User"), "1").Return(nil).Run(func(args mock.Arguments) {
+        arg := args.Get(0).(*Models.User)
+        *arg = *user
+    })
+
+    // Create the request to get the user.
+    req, _ := http.NewRequest(http.MethodGet, "/user/1", nil)
+    resp := httptest.NewRecorder()
+
+    // Test
+    router.ServeHTTP(resp, req)
+
+    // Check that the response code is 200 OK.
+    assert.Equal(t, http.StatusOK, resp.Code)
+
+    // Unmarshal the response body.
+    var responseUser Models.User
+    err := json.Unmarshal(resp.Body.Bytes(), &responseUser)
+
+    // If unmarshaling didn't return an error, check that the user fields match.
+    if assert.NoError(t, err) {
+        assert.Equal(t, user, &responseUser)
+    }
+
+    // Check that the mock expectations were met.
+    mockUserStore.AssertExpectations(t)
 }

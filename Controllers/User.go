@@ -20,6 +20,24 @@ type UserStorer interface{
 	CreateUser(user *Models.User) error
 	Validate(user Models.User) error
 	GetAllUsers(users *[]Models.User) error
+	GetUserByID(user *Models.User ,id string ) error
+	UpdateUser(user *Models.User ,id string) error
+	DeleteUser(user *Models.User, id string) error 
+}
+
+func GetUserByIDController(store UserStorer) gin.HandlerFunc{
+	return func (c *gin.Context){
+		id := c.Params.ByName("id")
+		var user Models.User
+
+		err:= store.GetUserByID(&user,id);
+		if(err !=nil){
+			fmt.Println(err.Error())
+			c.AbortWithStatus(http.StatusNotFound)
+		}else{
+			c.JSON(http.StatusOK,user)
+		}
+	}
 }
 
 func GetUsers(store UserStorer) gin.HandlerFunc{
@@ -60,10 +78,11 @@ func NewUserController(store UserStorer) gin.HandlerFunc {
 	}
 }
 // update user data
-func UpdateUser(c *gin.Context){
+func UpdateUser(store UserStorer) gin.HandlerFunc{
+	return func (c *gin.Context){
 	id:= c.Params.ByName("id")
 	var user Models.User
-	err:=Models.GetUserByID(&user,id)
+	err:=store.GetUserByID(&user,id)
 	if err!=nil{
 		fmt.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
@@ -78,7 +97,7 @@ func UpdateUser(c *gin.Context){
 		c.JSON(http.StatusNotFound,valErr)
 		return 
 	}
-	err = Models.UpdateUser(&user,id)
+	err = store.UpdateUser(&user,id)
 
 	if(err !=nil){
 		c.AbortWithStatus(http.StatusNotFound)
@@ -86,29 +105,15 @@ func UpdateUser(c *gin.Context){
 		c.JSON(http.StatusOK,user)
 	}
 
-}
-
-func GetUserByID(c *gin.Context){
-	id := c.Params.ByName("id")
-	var user Models.User
-
-	err:= Models.GetUserByID(&user,id);
-	if(err !=nil){
-		fmt.Println(err.Error())
-		c.AbortWithStatus(http.StatusNotFound)
-	}else{
-		c.JSON(http.StatusOK,user)
-	}
-}
-
-
+}}
 // delete user
 
-func DeleteUser (c *gin.Context){
+func DeleteUser (store UserStorer) gin.HandlerFunc{
+	return func(c *gin.Context){
 	var user Models.User
 	id := c.Params.ByName("id")
 
-	err:= Models.GetUserByID(&user,id);
+	err:= store.GetUserByID(&user,id);
 	if(err !=nil){
 		fmt.Println(err.Error())
 		  c.JSON(http.StatusNotFound,"REcord not found")
@@ -116,7 +121,7 @@ func DeleteUser (c *gin.Context){
 	}
 
 	c.BindJSON(&user)
-	err = Models.DeleteUser(&user,id)
+	err = store.DeleteUser(&user,id)
 
 	if err!=nil{
 		c.AbortWithStatus(http.StatusNotFound)
@@ -124,3 +129,8 @@ func DeleteUser (c *gin.Context){
 		c.JSON(http.StatusOK,gin.H{"id" + id: "is deleted"})
 	}
 }
+
+}
+
+
+
