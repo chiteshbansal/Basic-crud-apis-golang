@@ -9,17 +9,7 @@ import(
 
 // get all users
 
-func GetUsers(c *gin.Context){
-	var user []Models.User
-	err := Models.GetAllUsers(&user);
-	if err!= nil{
-		fmt.Println(err.Error())
-		c.AbortWithStatus(http.StatusNotFound)
-	}else{
-		c.JSON(http.StatusOK,user)
-	}
 
-}
 
 // type UserStore interface {
 // 	CreateUser(user *Models.User) error
@@ -29,7 +19,24 @@ func GetUsers(c *gin.Context){
 type UserStorer interface{
 	CreateUser(user *Models.User) error
 	Validate(user Models.User) error
+	GetAllUsers(users *[]Models.User) error
 }
+
+func GetUsers(store UserStorer) gin.HandlerFunc{
+	return func (c *gin.Context){
+		var users []Models.User
+		err := store.GetAllUsers(&users);
+		if err!= nil{
+			fmt.Println(err.Error())
+			c.AbortWithStatus(http.StatusNotFound)
+		}else{
+			c.JSON(http.StatusOK,users)
+		}
+	
+	}
+}
+
+
 func NewUserController(store UserStorer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user Models.User
