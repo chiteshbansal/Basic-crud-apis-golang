@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	// "fmt"
 	"net/http/httptest"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +16,7 @@ import (
 )
 
 func TestValidateUserData(t *testing.T) {
+
 	assert := assert.New(t)
 
 	testService := model.User{Name: "", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}

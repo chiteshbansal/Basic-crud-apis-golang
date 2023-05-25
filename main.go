@@ -1,25 +1,31 @@
 package main
 
-import(
-	"first-api/Config"
-	"first-api/Routes"
-	"first-api/Models"
+import (
+	config "first-api/config"
+	model "first-api/Models"
+	route "first-api/Routes"
 	"fmt"
-	"github.com/jinzhu/gorm"
+
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
+	"github.com/spf13/viper"
 )
 
 var err error
 
-func main(){
-	Config.DB , err = gorm.Open("mysql",Config.DbURL(Config.BuildDBConfig()))
-	if err !=nil{
-		fmt.Println("Status:",err)
+func main() {
+	// seting up env variables
+	viper.SetConfigFile("./.env")
+	viper.ReadInConfig()
+
+	config.DB, err = gorm.Open("mysql", config.DbURL(config.BuildDBConfig()))
+	if err != nil {
+		fmt.Println("Status:", err)
 	}
 
-	userStore :=new(model.UserStore)
-	defer Config.DB.Close()
-	Config.DB.AutoMigrate(&model.User{})
+	userStore := new(model.UserStore)
+	defer config.DB.Close()
+	config.DB.AutoMigrate(&model.User{})
 	r := route.SetupRouter(userStore)
 	r.Run()
 }

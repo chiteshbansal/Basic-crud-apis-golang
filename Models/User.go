@@ -1,7 +1,7 @@
 package model
 
 import (
-	"first-api/Config"
+	"first-api/config"
 	"fmt"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -11,7 +11,7 @@ import (
 type UserStore struct{}
 
 func (u *UserStore) CreateUser(user *User) error {
-	if err := Config.DB.Create(user).Error; err != nil {
+	if err := config.DB.Create(user).Error; err != nil {
 		return err
 	}
 	return nil
@@ -28,7 +28,7 @@ func (us *UserStore) Validate(u User) error {
 
 // get all users Fetch all user data
 func (us *UserStore) GetAllUsers(user *[]User) error {
-	if err := Config.DB.Find(user).Error; err != nil {
+	if err := config.DB.Find(user).Error; err != nil {
 		return err
 	}
 	return nil
@@ -37,7 +37,7 @@ func (us *UserStore) GetAllUsers(user *[]User) error {
 // getuserById
 
 func (us *UserStore) GetUserByID(user *User, id string) (err error) {
-	if err = Config.DB.Where("id = ?", id).First(user).Error; err != nil {
+	if err = config.DB.Where("id = ?", id).First(user).Error; err != nil {
 		return err
 	}
 	return nil
@@ -47,7 +47,7 @@ func (us *UserStore) GetUserByID(user *User, id string) (err error) {
 
 func (us *UserStore) UpdateUser(user *User, id string) (err error) {
 	fmt.Println(user)
-	Config.DB.Save(user)
+	config.DB.Save(user)
 	return nil
 }
 
@@ -55,7 +55,7 @@ func (us *UserStore) UpdateUser(user *User, id string) (err error) {
 
 func (us *UserStore) DeleteUser(user *User, id string) (err error) {
 	fmt.Println("user: ", user)
-	if err = Config.DB.Where("id = ?", id).Delete(user).Error; err != nil {
+	if err = config.DB.Where("id = ?", id).Delete(user).Error; err != nil {
 		return err
 	}
 	return nil
