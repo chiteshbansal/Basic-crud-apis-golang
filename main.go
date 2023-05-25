@@ -17,9 +17,9 @@ func main(){
 		fmt.Println("Status:",err)
 	}
 
-	userStore :=new(Models.UserStore)
+	userStore :=new(model.UserStore)
 	defer Config.DB.Close()
-	Config.DB.AutoMigrate(&Models.User{})
-	r := Routes.SetupRouter(userStore)
+	Config.DB.AutoMigrate(&model.User{})
+	r := route.SetupRouter(userStore)
 	r.Run()
 }

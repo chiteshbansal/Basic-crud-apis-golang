@@ -1,4 +1,4 @@
-package Routes
+package route
 
 import(
 	"first-api/Controllers"
@@ -7,16 +7,24 @@ import(
 )
 
 // setup Router .. Config routes
-func SetupRouter(userStore *Models.UserStore) *gin.Engine{
+
+// AVOID redundancy in the names and paths
+
+func SetupRouter(userStore *model.UserStore) *gin.Engine{
 	r :=gin.Default()
 	grp1:= r.Group("/user-api")
 	{
-		grp1.GET("user",Controllers.GetUsers)
-		grp1.POST("user",Controllers.NewUserController(userStore))
-		grp1.GET("user/:id",Controllers.GetUserByID)
-		grp1.PUT("user/:id",Controllers.UpdateUser)
-		grp1.DELETE("user/:id",Controllers.DeleteUser)
+		grp1.GET("user",controller.GetUsers(userStore))
+		grp1.POST("user",controller.NewUserController(userStore))
+		grp1.GET("user/:id",controller.GetUserByIDController(userStore))
+		grp1.PUT("user/:id",controller.UpdateUser(userStore))
+		grp1.DELETE("user/:id",controller.DeleteUser(userStore))
 	}
 	return r
 }
 
+// versioning concept 
+// authentication
+// naming conventions
+// config 
+// viper(reading configs)
