@@ -1,7 +1,7 @@
 package model
 
 import (
-	"first-api/config"
+	db "first-api/database"
 	"fmt"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -10,9 +10,17 @@ import (
 
 type UserStore struct{}
 
+type CustomError struct {
+	Message string
+}
+
+func (e *CustomError) Error() string {
+	return e.Message
+}
+
 func (u *UserStore) CreateUser(user *User) error {
-	if err := config.DB.Create(user).Error; err != nil {
-		return err
+	if err := db.DB.Create(user).Error; err != nil {
+		return &CustomError{Message: "User cannot be Created "}
 	}
 	return nil
 }
@@ -28,8 +36,8 @@ func (us *UserStore) Validate(u User) error {
 
 // get all users Fetch all user data
 func (us *UserStore) GetAllUsers(user *[]User) error {
-	if err := config.DB.Find(user).Error; err != nil {
-		return err
+	if err := db.DB.Find(user).Error; err != nil {
+		return &CustomError{Message: "Users cannot be fetched  "}
 	}
 	return nil
 }
@@ -37,8 +45,8 @@ func (us *UserStore) GetAllUsers(user *[]User) error {
 // getuserById
 
 func (us *UserStore) GetUserByID(user *User, id string) (err error) {
-	if err = config.DB.Where("id = ?", id).First(user).Error; err != nil {
-		return err
+	if err = db.DB.Where("id = ?", id).First(user).Error; err != nil {
+		return &CustomError{Message: "User Not found "}
 	}
 	return nil
 }
@@ -47,7 +55,9 @@ func (us *UserStore) GetUserByID(user *User, id string) (err error) {
 
 func (us *UserStore) UpdateUser(user *User, id string) (err error) {
 	fmt.Println(user)
-	config.DB.Save(user)
+	if err = db.DB.Save(user).Error; err != nil {
+		return &CustomError{Message: "User Update Failed! Try Again"}
+	}
 	return nil
 }
 
@@ -55,8 +65,8 @@ func (us *UserStore) UpdateUser(user *User, id string) (err error) {
 
 func (us *UserStore) DeleteUser(user *User, id string) (err error) {
 	fmt.Println("user: ", user)
-	if err = config.DB.Where("id = ?", id).Delete(user).Error; err != nil {
-		return err
+	if err = db.DB.Where("id = ?", id).Delete(user).Error; err != nil {
+		return &CustomError{Message: "Delete User Failed "}
 	}
 	return nil
 

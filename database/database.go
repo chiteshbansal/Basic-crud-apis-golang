@@ -1,9 +1,7 @@
-package config
+package db
 
 import (
 	"fmt"
-
-	"strconv"
 
 	"github.com/jinzhu/gorm"
 	"github.com/spf13/viper"
@@ -12,7 +10,7 @@ import (
 var DB *gorm.DB
 
 // DBConfig represents db configuration
-type DBConfig struct {
+type Config struct {
 	Host     string
 	Port     int
 	User     string
@@ -20,21 +18,22 @@ type DBConfig struct {
 	Password string
 }
 
-func BuildDBConfig() *DBConfig {
+func BuildConfig() *Config {
+
 	viper.SetConfigFile("../.env")
 	viper.ReadInConfig()
-	port, _ := strconv.Atoi(viper.Get("PORT").(string))
-	dbConfig := DBConfig{
-		Host:     "localhost",
-		Port:     port,
-		User:     "root",
-		Password: "pass123",
-		DBName:   "firstapi",
+
+	dbConfig := Config{
+		Host:     viper.GetString("HOST"),
+		Port:     viper.GetInt("PORT"),
+		User:     viper.GetString("USERNAME"),
+		Password: viper.GetString("PASSWORD"),
+		DBName:   viper.GetString("DBNAME"),
 	}
 
 	return &dbConfig
 }
-func DbURL(dbConfig *DBConfig) string {
+func DbURL(dbConfig *Config) string {
 	return fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 		dbConfig.User,
