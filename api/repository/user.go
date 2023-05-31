@@ -4,8 +4,6 @@ import (
 	"context"
 	model "first-api/api/Models"
 	db "first-api/database"
-	"fmt"
-
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
@@ -25,7 +23,6 @@ func (e *CustomError) Error() string {
 }
 
 func (u *UserStore) CreateUser(ctx context.Context, user *model.User) error {
-	fmt.Println("Creating user")
 	if err := db.DB.Create(user).Error; err != nil {
 		return &CustomError{Message: "User cannot be Created "}
 	}
@@ -38,12 +35,10 @@ func (us *UserStore) Validate(u model.User) error {
 		validation.Field(&u.Phone, validation.Required, validation.Length(10, 10)),
 		validation.Field(&u.Address, validation.Required, validation.Length(10, 50)),
 	)
-
 }
 
 // // get all users Fetch all user data
 func (us *UserStore) GetAllUsers(user *[]model.User) error {
-	fmt.Println("fetching user ")
 	if err := db.DB.Find(user).Error; err != nil {
 		return &CustomError{Message: "Users cannot be fetched  "}
 	}
@@ -53,7 +48,6 @@ func (us *UserStore) GetAllUsers(user *[]model.User) error {
 // getuserById
 
 func (us *UserStore) GetUser(user *model.User, query string) (err error) {
-	fmt.Println("query", query)
 	if err = db.DB.Where(query).Find(user).Error; err != nil {
 		return &CustomError{Message: "User Not found "}
 	}
@@ -63,7 +57,6 @@ func (us *UserStore) GetUser(user *model.User, query string) (err error) {
 // update user
 
 func (us *UserStore) UpdateUser(user *model.User, id string) (err error) {
-	fmt.Println(user)
 	if err = db.DB.Save(user).Error; err != nil {
 		return &CustomError{Message: "User Update Failed! Try Again"}
 	}
@@ -73,10 +66,8 @@ func (us *UserStore) UpdateUser(user *model.User, id string) (err error) {
 // Delete User
 
 func (us *UserStore) DeleteUser(user *model.User, id string) (err error) {
-	fmt.Println("user: ", user)
 	if err = db.DB.Where("id = ?", id).Delete(user).Error; err != nil {
 		return &CustomError{Message: "Delete User Failed "}
 	}
 	return nil
-
 }

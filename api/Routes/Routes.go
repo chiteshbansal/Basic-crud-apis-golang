@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	// "fmt"
-	"net/http"
 
 	"context"
 
@@ -20,7 +19,7 @@ type AppReq struct {
 	Params  map[string]string
 }
 
-type AppResp interface{}
+type AppResp map[string]interface{}
 
 type RouteHandler func(ctx context.Context, req *AppReq) AppResp
 type AppMiddleWare func(g *gin.Context)
@@ -67,17 +66,15 @@ func InitializeRoutes(server *gin.Engine) {
 			extractData(ctx, appReq)
 
 			// call service
-			// fmt.Println(appReq)
 			resp := r.Handler(ctx.Request.Context(), appReq)
 			json.MarshalIndent(resp, "	", "\n")
 
 			// fmt.Println(resp)
-			ctx.JSON(http.StatusOK, resp)
+			ctx.JSON(resp["status"].(int), resp)
 			return
 
 		}
 		routeHandlers := append(r.Middlewares, ginHandlerFunc)
-		// fmt.Println(r.Method,r.Handler)
 		server.Handle(r.Method, r.GetPath(), routeHandlers...)
 	}
 }
@@ -99,8 +96,31 @@ func extractData(ctx *gin.Context, appReq *AppReq) {
 			appReq.Params[p.Key] = p.Value
 		}
 	}
-	var jsonInput map[string]interface{}
-	if err := ctx.BindJSON((&jsonInput)); err == nil {
-		appReq.Body = jsonInput
+	body, exists := ctx.Get("body")
+
+	if !exists {
+		var jsonInput map[string]interface{}
+		if err := ctx.BindJSON((&jsonInput)); err == nil {
+			appReq.Body = jsonInput
+		}
+	} else {
+		var err error
+		appReq.Body, err = StructToMapStringInterface(body)
+		fmt.Println(err)
 	}
+}
+
+func StructToMapStringInterface(s interface{}) (map[string]interface{}, error) {
+
+	marshalledDate, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	var data map[string]interface{}
+	err = json.Unmarshal(marshalledDate, &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+
 }

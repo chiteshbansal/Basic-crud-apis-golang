@@ -8,6 +8,7 @@ import (
 	"first-api/api/repository"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type UserService struct {
@@ -15,19 +16,10 @@ type UserService struct {
 }
 
 func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.AppResp {
-	fmt.Println("Create user called")
 	var user model.User
 
 	jsonData, err := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
-	valErr := u.Store.Validate(user)
-
-	if valErr != nil {
-		return map[string]interface{}{
-			"status": http.StatusNotFound,
-			"error":  valErr,
-		}
-	}
 
 	err = u.Store.CreateUser(ctx, &user)
 	if err != nil {
@@ -44,14 +36,12 @@ func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.A
 }
 
 func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
-	fmt.Println("get users called")
-
 	var users []model.User
 	err := u.Store.GetAllUsers(&users)
 	if err != nil {
 		fmt.Println(err.Error())
 		return map[string]interface{}{
-			"status": http.StatusNotFound,
+			"status": http.StatusInternalServerError,
 			"error":  err.Error(),
 		}
 	} else {
@@ -67,7 +57,9 @@ func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.App
 func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	id := req.Params["id"]
 	var user model.User
-	err := u.Store.GetUser(&user, id)
+	query := "id=" + id
+
+	err := u.Store.GetUser(&user, query)
 	if err != nil {
 		fmt.Println(err.Error())
 		return map[string]interface{}{
@@ -78,26 +70,23 @@ func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.A
 
 	jsonData, err := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
-	valErr := u.Store.Validate(user)
 
-	if valErr != nil {
-		return map[string]interface{}{
-			"status": http.StatusNotFound,
-			"error":  valErr,
-		}
-	}
+	// parse string to uint
+	val, _ := (strconv.ParseUint(id, 10, 64))
+	user.Id = (uint)(val)
 
-	err = u.Store.UpdateUser(&user, id)
+	u.Store.UpdateUser(&user, id)
 
 	if err != nil {
 		return map[string]interface{}{
-			"status": http.StatusNotFound,
+			"status": http.StatusInternalServerError,
 			"error":  err.Error(),
 		}
 	} else {
 		return map[string]interface{}{
-			"status": http.StatusOK,
-			"user":   user,
+			"status":  http.StatusOK,
+			"message": "User updated !!",
+			"user":    user,
 		}
 	}
 
@@ -108,8 +97,8 @@ func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.A
 func (u *UserService) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
 	id := req.Params["id"]
-
-	err := u.Store.GetUser(&user, id)
+	query := "id=" + id
+	err := u.Store.GetUser(&user, query)
 	if err != nil {
 		fmt.Println(err.Error())
 		return map[string]interface{}{
@@ -143,7 +132,7 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 	err := u.Store.GetUser(&user, query)
 	if err != nil {
 		return map[string]interface{}{
-			"status": http.StatusNotFound,
+			"status": http.StatusInternalServerError,
 			"error":  err.Error(),
 		}
 	} else {
