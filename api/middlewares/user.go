@@ -10,17 +10,20 @@ import (
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
+// ValidateUserData is a middleware function that validates user data from the request body.
 func ValidateUserData(ctx *gin.Context) {
 	body := model.User{}
 
-	if err := ctx.BindJSON((&body)); err != nil {
-		fmt.Println("ERror ", err)
+	if err := ctx.BindJSON(&body); err != nil {
+		fmt.Println("Error: ", err)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": "Something went wrong !!",
+			"error": "Something went wrong!",
 		})
 		return
 	}
-	valError := validation.ValidateStruct(&body, validation.Field(&body.Name, validation.Required, validation.Length(5, 20)),
+
+	valError := validation.ValidateStruct(&body,
+		validation.Field(&body.Name, validation.Required, validation.Length(5, 20)),
 		validation.Field(&body.Email, validation.Required, is.Email),
 		validation.Field(&body.Phone, validation.Required, validation.Length(10, 10)),
 		validation.Field(&body.Address, validation.Required, validation.Length(10, 50)),
