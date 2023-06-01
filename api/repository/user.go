@@ -27,13 +27,12 @@ func (e *CustomError) Error() string {
 }
 
 // CreateUser creates a user in the database.
-func (u *UserStore) CreateUser( user *model.User) error {
+func (u *UserStore) CreateUser(user *model.User) error {
 	if err := db.DB.Create(user).Error; err != nil {
 		return &CustomError{Message: "User cannot be Created "}
 	}
 	return nil
 }
-
 
 // GetAllUsers fetches all user data from the database.
 func (us *UserStore) GetAllUsers(user *[]model.User) error {

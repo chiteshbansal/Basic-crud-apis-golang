@@ -2,30 +2,29 @@ package config
 
 import (
 	"github.com/spf13/viper"
-
 )
 
 type Config struct {
-    Port  string `mapstructure:"PORT"`
-    DBUrl string `mapstructure:"DB_URL"`
+	Port     string `mapstructure:"PORT"`
+	DBUrl    string `mapstructure:"DB_URL"`
 	Username string `mapstructure:"USERNAME"`
 	Password string `mapstructure:"PASSWORD"`
 }
 
 func LoadConfig() (c Config, err error) {
-    viper.AddConfigPath("../")
-    viper.SetConfigName("dev")
-    viper.SetConfigType("env")
+	viper.AddConfigPath("../")
+	viper.SetConfigName("dev")
+	viper.SetConfigType("env")
 
-    viper.AutomaticEnv()
+	viper.AutomaticEnv()
 
-    err = viper.ReadInConfig()
+	err = viper.ReadInConfig()
 
-    if err != nil {
-        return
-    }
+	if err != nil {
+		return
+	}
 
-    err = viper.Unmarshal(&c)
+	err = viper.Unmarshal(&c)
 
-    return
+	return
 }

@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"first-api/api/Models"
-	"first-api/api/Routes"
+	model "first-api/api/Models"
+	route "first-api/api/Routes"
 	"first-api/api/repository"
+	"first-api/api/utils"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -60,7 +62,6 @@ func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.A
 		"user":   user,
 	}
 }
-
 
 // GetUsers retrieves all users.
 func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
@@ -163,5 +164,47 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"user":   user,
+	}
+}
+
+func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppResp {
+	query := "email=\"" + req.Body["email"].(string) + "\""
+
+	var user model.User
+
+	err := u.Store.GetUser(&user, query)
+
+	if err != nil {
+		return map[string]interface{}{
+			"status": http.StatusInternalServerError,
+			"error":  err.Error(),
+		}
+	}
+
+	storedHash := user.Password
+	receivedPassword := req.Body["password"].(string)
+
+	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(receivedPassword))
+
+	if err != nil {
+		return map[string]interface{}{
+			"status": http.StatusBadRequest,
+			"error":  "Email Id and password do not match",
+		}
+	}
+
+	token, err := utils.GenerateJWT(user.Email)
+	fmt.Println(err)
+	if err != nil {
+		return map[string]interface{}{
+			"status": http.StatusInternalServerError,
+			"error":  "Something went wrong",
+		}
+	}
+
+	return map[string]interface{}{
+		"status": http.StatusOK,
+		"token":  token,
+		"email":  user.Email,
 	}
 }

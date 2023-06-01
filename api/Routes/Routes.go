@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -73,6 +74,10 @@ func InitializeRoutes(server *gin.Engine) {
 			resp := r.Handler(ctx.Request.Context(), appReq)
 			json.MarshalIndent(resp, "	", "\n")
 
+			if resp["token"] != nil {
+				ctx.Writer.Header().Set("Authorization", "Bearer "+resp["token"].(string))
+			}
+
 			ctx.JSON(resp["status"].(int), resp)
 			return
 
@@ -99,7 +104,6 @@ func extractData(ctx *gin.Context, appReq *AppReq) {
 		appReq.Params[p.Key] = p.Value
 	}
 	body, exists := ctx.Get("body")
-
 	if !exists {
 		var jsonInput map[string]interface{}
 		if err := ctx.BindJSON(&jsonInput); err == nil {
@@ -108,6 +112,7 @@ func extractData(ctx *gin.Context, appReq *AppReq) {
 	} else {
 		var err error
 		appReq.Body, err = StructToMapStringInterface(body)
+		appReq.Body["confirmPassword"], _ = ctx.Get("confirmPassword")
 		fmt.Println(err)
 	}
 }
