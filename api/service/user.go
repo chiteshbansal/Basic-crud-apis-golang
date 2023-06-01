@@ -1,15 +1,15 @@
-// The service package provides services for interacting with user data.
 package service
 
 import (
 	"context"
 	"encoding/json"
-	model "first-api/api/Models"
-	route "first-api/api/Routes"
+	"first-api/api/Models"
+	"first-api/api/Routes"
 	"first-api/api/repository"
-	// "fmt"
 	"net/http"
 	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService encapsulates use case logic for users.
@@ -24,7 +24,27 @@ func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.A
 	jsonData, err := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
 
-	err = u.Store.CreateUser(ctx, &user)
+	password := req.Body["password"].(string)
+	confirmPassword := req.Body["confirmPassword"].(string)
+
+	if password != confirmPassword {
+		return map[string]interface{}{
+			"status": http.StatusBadRequest,
+			"error":  "Password and confirm password do not match!",
+		}
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return map[string]interface{}{
+			"status": http.StatusInternalServerError,
+			"error":  "Failed to hash password!",
+		}
+	}
+
+	user.Password = string(hashedPassword)
+
+	err = u.Store.CreateUser(&user)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
@@ -32,11 +52,15 @@ func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.A
 		}
 	}
 
+	// Clear the password field in the response for security purposes
+	user.Password = ""
+
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"user":   user,
 	}
 }
+
 
 // GetUsers retrieves all users.
 func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {

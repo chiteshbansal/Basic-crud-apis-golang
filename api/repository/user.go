@@ -27,7 +27,7 @@ func (e *CustomError) Error() string {
 }
 
 // CreateUser creates a user in the database.
-func (u *UserStore) CreateUser(ctx context.Context, user *model.User) error {
+func (u *UserStore) CreateUser( user *model.User) error {
 	if err := db.DB.Create(user).Error; err != nil {
 		return &CustomError{Message: "User cannot be Created "}
 	}

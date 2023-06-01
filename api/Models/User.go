@@ -7,6 +7,7 @@ type User struct {
 	Email   string `json:"email"`
 	Phone   string `json:"phone"`
 	Address string `json:"address"`
+	Password string `json:"password"`
 }
 
 // TableName returns the name of the corresponding database table for the User model.
