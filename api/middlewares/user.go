@@ -4,7 +4,6 @@ import (
 	model "first-api/api/Models"
 	"fmt"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
@@ -31,7 +30,6 @@ func ValidateUserData(ctx *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(reqBody)
 	valError := validation.ValidateStruct(&reqBody,
 		validation.Field(&reqBody.Name, validation.Required, validation.Length(5, 20)),
 		validation.Field(&reqBody.Email, validation.Required, is.Email),
@@ -40,7 +38,6 @@ func ValidateUserData(ctx *gin.Context) {
 	)
 
 	if valError != nil {
-		fmt.Println(valError)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": valError,
 		})

@@ -14,6 +14,7 @@ func VerifyJWT(ctx *gin.Context) {
 	email := ctx.GetHeader("X-User-Email")
 	viper.SetConfigFile("../.env")
 	viper.ReadInConfig()
+
 	if authHeader != "" {
 		tokenString := strings.Split(authHeader, "Bearer ")[1]
 		// Replace "YOUR_SECRET_KEY" with your actual secret key

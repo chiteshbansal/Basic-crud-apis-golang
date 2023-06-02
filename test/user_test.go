@@ -1,193 +1,266 @@
 package test
 
-// import (
-// 	"bytes"
-// 	"encoding/json"
-// 	model "first-api/Models"
-// 	"net/http"
-// 	"testing"
+import (
+	"encoding/json"
+	model "first-api/api/Models"
+	route "first-api/api/Routes"
+	middleware "first-api/api/middlewares"
+	// "first-api/api/repository"
+	"first-api/api/service"
+	"first-api/api/utils"
+	"bytes"
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
-// 	"github.com/stretchr/testify/assert"
+// MockRepo struct holds a mock.Mock field to mock the repository.SongRepo interface. It helps in testing controller functions by mocking the associated helper functions of repo layer.
+type MockRepo struct {
+	mock.Mock
+}
 
-// 	"net/http/httptest"
+// GetAllSong() mocks the GetAllSong() method of repository.SongRepo interface.
+func (m *MockRepo) GetAllUsers(b *[]model.User) error {
+	args := m.Called(b)
+	return args.Error(0)
+}
 
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/stretchr/testify/mock"
-// )
+// AddSong() mocks the AddSong() method of repository.SongRepo interface.
+func (m *MockRepo) CreateUser(b *model.User) error {
+	args := m.Called(b)
+	return args.Error(0)
+}
 
-// func TestValidateUserData(t *testing.T) {
+// GetSong() mocks the GetSong() method of repository.SongRepo interface.
+func (m *MockRepo) GetUser(user *model.User, id string) (err error) {
+	args := m.Called(user, id)
 
-// 	assert := assert.New(t)
+	// if the mock is set to return an error, return it
+	if args.Error(0) != nil {
+		return args.Error(0)
+	}
 
-// 	testService := model.User{Name: "", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
+	// otherwise, set the passed user object fields
+	user.Id = 1
+	user.Name = "test user"
+	user.Email = "test@gmail.com"
+	user.Phone = "9999999999"
+	user.Address = "abcd efgh ijkl"
 
-// 	err := testService.Validate()
-// 	// fmt.Println(err)
+	return nil
+}
 
-// 	assert.NotNil(t, err)
+// UpdateSong() mocks the UpdateSong() method of repository.SongRepo interface.
+func (m *MockRepo) UpdateUser(b *model.User, id string) (err error) {
+	args := m.Called(b, id)
+	return args.Error(0)
+}
 
-// 	testService.Name = "testing"
-// 	testService.Email = "test"
-// 	err = testService.Validate()
-// 	// fmt.Println(err)
+// DeleteSong() mocks the DeleteSong() method of repository.SongRepo interface.
+func (m *MockRepo) DeleteUser(b *model.User, id string) (err error) {
+	args := m.Called(b, id)
+	return args.Error(0)
+}
 
-// 	assert.NotNil(t, err)
+// initializeTest() instantiates a MockRepo and creates a new Controller with this MockRepo as its Repo field. It also creates a new default gin.Engine and returns all three.
+func initializeTest() (*MockRepo, service.UserService, *gin.Engine) {
+	viper.SetConfigFile(".env")
+	viper.ReadInConfig()
+	gin.SetMode(gin.TestMode)
+	mockRepo := new(MockRepo)
+	userService := service.UserService{Store: mockRepo}
+	return mockRepo, userService, gin.Default()
+}
 
-// 	testService.Phone = "999999999"
-// 	err = testService.Validate()
-// 	// fmt.Println(err)
+// TestGetAllSong function tests the GetAllSong function of Controller
+func TestGetAllSong(t *testing.T) {
+	users := []model.User{
+		{Name: "test User 1", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"},
+		{Name: "test user 2", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"},
+	}
 
-// 	assert.NotNil(t, err)
+	mockRepo, userService, router := initializeTest()
+	route.RegisterRoutes(route.RouteDef{
+		Path:        "/user",
+		Version:     "v1",
+		Method:      "GET",
+		Handler:     userService.GetUsers,
+		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
+	})
 
-// 	testService.Address = ""
-// 	err = testService.Validate()
-// 	// fmt.Println(err)
+	route.InitializeRoutes(router)
+	mockRepo.On("GetAllUsers", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		arg := args.Get(0).(*[]model.User)
+		*arg = users
+	})
 
-// 	assert.NotNil(t, err)
+	req, _ := http.NewRequest("GET", "/v1/user/", nil)
+	token, _ := utils.GenerateJWT("test@test.com")
+	token = "Bearer " + token
 
-// }
+	req.Header.Set("Authorization", token)
+	req.Header.Set("X-User-Email", "test@test.com")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
 
-// type MockUserStore struct {
-// 	mock.Mock
-// }
+	mockRepo.AssertExpectations(t)
+}
 
-// func (m *MockUserStore) CreateUser(user *model.User) error {
-// 	args := m.Called(user)
-// 	return args.Error(0)
-// }
+// // TestAddSong function tests the AddSong function of Controller
+func TestCreateUser(t *testing.T) {
+	user := &model.User{
+		Name:     "test user",
+		Email:    "test@gmail.com",
+		Phone:    "9999999999",
+		Address:  "abcd efgh ijkl",
+		Password: "pass123",
+	}
 
-// func (m *MockUserStore) Validate(user model.User) error {
-// 	args := m.Called(user)
-// 	return args.Error(0)
-// }
+	mockRepo, userService, router := initializeTest()
+	// mockRepo.On("CreateUser").Return(nil)
+	mockRepo.On("CreateUser", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		arg := args.Get(0).(*model.User)
+		*arg = *user
+	})
 
-// func (m *MockUserStore) GetAllUsers(users *[]model.User) error {
-// 	args := m.Called(users)
-// 	return args.Error(0)
-// }
+	route.RegisterRoutes(route.RouteDef{
+		Path:        "/user",
+		Version:     "v1",
+		Method:      "POST",
+		Handler:     userService.CreateUser,
+		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT, middleware.ValidateUserData},
+	})
+	route.InitializeRoutes(router)
+	AppReq, _ := route.StructToMapStringInterface(user)
+	AppReq["confirmPassword"] = "pass123"
 
-// func (m *MockUserStore) GetUserByID(user *model.User, id string) error {
-// 	args := m.Called(user, id)
+	body, _ := json.Marshal(AppReq)
+	req, _ := http.NewRequest("POST", "/v1/user/", bytes.NewBuffer(body))
+	token, _ := utils.GenerateJWT("test@test.com")
+	token = "Bearer " + token
 
-// 	// if the mock is set to return an error, return it
-// 	if args.Error(0) != nil {
-// 		return args.Error(0)
-// 	}
+	req.Header.Set("Authorization", token)
+	req.Header.Set("X-User-Email", "test@test.com")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusOK, resp.Code)
+	mockRepo.AssertExpectations(t)
+}
 
-// 	// otherwise, set the passed user object fields
-// 	user.Id = 1
-// 	user.Name = "test user"
-// 	user.Email = "test@gmail.com"
-// 	user.Phone = "9999999999"
-// 	user.Address = "abcd efgh ijkl"
+// // TestGetSongById function tests the GetSongById function of Controller
+type Response struct {
+	Status int        `json:"status"`
+	User   model.User `json:"user"`
+}
 
-// 	return nil
-// }
-// func (m *MockUserStore) UpdateUser(user *model.User, id string) error {
-// 	args := m.Called(user, id)
-// 	return args.Error(0)
-// }
-// func (m *MockUserStore) DeleteUser(user *model.User, id string) error {
-// 	args := m.Called(user, id)
-// 	return args.Error(0)
-// }
+func TestGetUser(t *testing.T) {
+	mockRepo, userService, router := initializeTest()
+	user := &model.User{Id: 1, Name: "test user", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
 
-// func TestCreateUser(t *testing.T) {
-// 	mockUserStore := new(MockUserStore)
-// 	user := &model.User{
-// 		Name:  "test user",
-// 		Email: "test@gmail.com",
+	route.RegisterRoutes(route.RouteDef{
+		Path:        "/user/filter",
+		Version:     "v1",
+		Method:      "GET",
+		Handler:     userService.GetUser,
+		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
+	})
+	route.InitializeRoutes(router)
+	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
-// 		Phone:   "9999999999",
-// 		Address: "abcd efgh ijkl",
-// 	}
-// 	// Setup Gin
-// 	gin.SetMode(gin.TestMode)
-// 	router := gin.Default()
+	req, _ := http.NewRequest("GET", "/v1/user/filter/?filter=id&value=1", nil)
+	token, _ := utils.GenerateJWT("test@test.com")
+	token = "Bearer " + token
 
-// 	router.POST("/user", CreateUser(mockUserStore))
+	req.Header.Set("Authorization", token)
+	req.Header.Set("X-User-Email", "test@test.com")
+	resp := httptest.NewRecorder()
 
-// 	mockUserStore.On("Validate", *user).Return(nil)
-// 	mockUserStore.On("CreateUser", user).Return(nil)
+	router.ServeHTTP(resp, req)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
 
-// 	body, _ := json.Marshal(user)
-// 	req, _ := http.NewRequest(http.MethodPost, "/user", bytes.NewBuffer(body))
-// 	resp := httptest.NewRecorder()
+	var responseUser Response
 
-// 	// Test
-// 	router.ServeHTTP(resp, req)
+	err = json.Unmarshal(bodyBytes, &responseUser)
+	// If unmarshaling didn't return an error, check that the user fields match.
+	if assert.NoError(t, err) {
+		assert.Equal(t, user, &responseUser.User)
+	}
 
-// 	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, http.StatusOK, responseUser.Status)
+	mockRepo.AssertExpectations(t)
+}
 
-// 	mockUserStore.AssertExpectations(t)
-// }
+// TestUpdateSong function tests the UpdateSong function of Controller
+func TestUpdateSong(t *testing.T) {
+	mockRepo, userService, router := initializeTest()
+	route.RegisterRoutes(route.RouteDef{
+		Path:        "/user/:id",
+		Version:     "v1",
+		Method:      "PUT",
+		Handler:     userService.UpdateUser,
+		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT, middleware.ValidateUserData},
+	})
+	route.InitializeRoutes(router)
+	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
+	mockRepo.On("UpdateUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
-// func TestGetUsers(t *testing.T) {
-// 	mockUserStore := new(MockUserStore)
+	user := &model.User{Id: 1, Name: "test user", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
 
-// 	users := []model.User{
-// 		{Name: "test User 1", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"},
-// 		{Name: "test user 2", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"},
-// 	}
-// 	gin.SetMode(gin.TestMode)
-// 	router := gin.Default()
+	AppReq, _ := route.StructToMapStringInterface(user)
 
-// 	router.GET("/user", GetUsers(mockUserStore))
+	body, _ := json.Marshal(AppReq)
+	req, _ := http.NewRequest("PUT", "/v1/user/1/", bytes.NewBuffer(body))
+	token, _ := utils.GenerateJWT("test@test.com")
+	token = "Bearer " + token
 
-// 	mockUserStore.On("GetAllUsers", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
-// 		arg := args.Get(0).(*[]model.User)
-// 		*arg = users
-// 	})
+	req.Header.Set("Authorization", token)
+	req.Header.Set("X-User-Email", "test@test.com")
+	resp := httptest.NewRecorder()
 
-// 	req, _ := http.NewRequest(http.MethodGet, "/user", nil)
-// 	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
 
-// 	// Test
-// 	router.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusOK, resp.Code)
+	mockRepo.AssertExpectations(t)
+}
 
-// 	assert.Equal(t, http.StatusOK, resp.Code)
+// TestDeleteSong function tests the DeleteSong function of Controller
+func TestDeleteUser(t *testing.T) {
+	mockRepo, userService, router := initializeTest()
+	route.RegisterRoutes(route.RouteDef{
+		Path:        "/user/:id",
+		Version:     "v1",
+		Method:      "DELETE",
+		Handler:     userService.DeleteUser,
+		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
+	})
+	route.InitializeRoutes(router)
 
-// 	mockUserStore.AssertExpectations(t)
-// }
+	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
-// // GetUserByID test function
+	mockRepo.On("DeleteUser", mock.AnythingOfType("*model.User"), "1").Return(nil)
 
-// func TestGetUserById(t *testing.T) {
-// 	mockUserStore := new(MockUserStore)
-// 	user := &model.User{Id: 1, Name: "test user", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
+	req, _ := http.NewRequest("DELETE", "/v1/user/1/", nil)
+	token, _ := utils.GenerateJWT("test@test.com")
+	token = "Bearer " + token
 
-// 	// Setup Gin
-// 	gin.SetMode(gin.TestMode)
-// 	router := gin.Default()
+	req.Header.Set("Authorization", token)
+	req.Header.Set("X-User-Email", "test@test.com")
+	resp := httptest.NewRecorder()
 
-// 	router.GET("/user/:id", GetUserByID(mockUserStore))
+	router.ServeHTTP(resp, req)
 
-// 	// Configure the mock to expect a call to GetUserByID with any user object and the id "1", and to return no error.
-// 	// It should also set the user object's fields to match the fields of the `user` variable.
-// 	mockUserStore.On("GetUserByID", mock.AnythingOfType("*model.User"), "1").Return(nil).Run(func(args mock.Arguments) {
-// 		arg := args.Get(0).(*model.User)
-// 		*arg = *user
-// 	})
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 
-// 	// Create the request to get the user.
-// 	req, _ := http.NewRequest(http.MethodGet, "/user/1", nil)
-// 	resp := httptest.NewRecorder()
+	var responseUser Response
 
-// 	// Test
-// 	router.ServeHTTP(resp, req)
+	_ = json.Unmarshal(bodyBytes, &responseUser)
 
-// 	// Check that the response code is 200 OK.
-// 	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, http.StatusOK, responseUser.Status)
+	mockRepo.AssertExpectations(t)
 
-// 	// Unmarshal the response body.
-// 	var responseUser model.User
-// 	err := json.Unmarshal(resp.Body.Bytes(), &responseUser)
-
-// 	// If unmarshaling didn't return an error, check that the user fields match.
-// 	if assert.NoError(t, err) {
-// 		assert.Equal(t, user, &responseUser)
-// 	}
-
-// 	// Check that the mock expectations were met.
-// 	mockUserStore.AssertExpectations(t)
-// }
+}

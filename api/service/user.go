@@ -7,7 +7,6 @@ import (
 	route "first-api/api/Routes"
 	"first-api/api/repository"
 	"first-api/api/utils"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -16,7 +15,7 @@ import (
 
 // UserService encapsulates use case logic for users.
 type UserService struct {
-	Store repository.UserStore
+	Store repository.UserStorer
 }
 
 // CreateUser creates a new user.
@@ -109,7 +108,6 @@ func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.A
 			"error":  err.Error(),
 		}
 	}
-
 	return map[string]interface{}{
 		"status":  http.StatusOK,
 		"message": "User updated !!",
@@ -129,12 +127,9 @@ func (u *UserService) DeleteUser(ctx context.Context, req *route.AppReq) route.A
 			"error":  err.Error(),
 		}
 	}
-
 	jsonData, err := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
-
 	err = u.Store.DeleteUser(&user, id)
-
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
@@ -169,7 +164,6 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 
 func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := "email=\"" + req.Body["email"].(string) + "\""
-
 	var user model.User
 
 	err := u.Store.GetUser(&user, query)
@@ -194,7 +188,6 @@ func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppRes
 	}
 
 	token, err := utils.GenerateJWT(user.Email)
-	fmt.Println(err)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,

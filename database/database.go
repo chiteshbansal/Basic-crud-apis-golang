@@ -30,7 +30,6 @@ func BuildConfig() *Config {
 		Password: viper.GetString("PASSWORD"),
 		DBName:   viper.GetString("DBNAME"),
 	}
-
 	return &dbConfig
 }
 func DbURL(dbConfig *Config) string {

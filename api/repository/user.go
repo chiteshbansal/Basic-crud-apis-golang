@@ -2,15 +2,17 @@
 package repository
 
 import (
-	"context"
 	model "first-api/api/Models"
 	db "first-api/database"
 )
 
 // UserStorer is the interface that wraps the methods for manipulating and validating User data.
 type UserStorer interface {
-	CreateUser(ctx context.Context, user *model.User) error
-	Validate(user model.User) error
+	CreateUser(user *model.User) error
+	GetAllUsers(user *[]model.User) error
+	GetUser(user *model.User, query string) error
+	UpdateUser(user *model.User, query string) error
+	DeleteUser(user *model.User, query string) error
 }
 
 // UserStore is a concrete implementation of the UserStorer interface.

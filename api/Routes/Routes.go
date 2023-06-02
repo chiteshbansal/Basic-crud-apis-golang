@@ -4,8 +4,6 @@ package route
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -47,14 +45,12 @@ var clientRoutes []RouteDef = []RouteDef{}
 // RegisterRoutes adds a route definition to the list of client routes.
 func RegisterRoutes(r RouteDef) {
 	clientRoutes = append(clientRoutes, r)
-	fmt.Println("registering routest", clientRoutes)
 }
 
 // InitializeRoutes initializes the routes on the given gin engine.
 func InitializeRoutes(server *gin.Engine) {
 	//common middleware that sits in between framework and service and do transformation request set to app and response received from service
 	// component
-	fmt.Println(clientRoutes, "client routes")
 	for _, route := range clientRoutes {
 		r := route
 		ginHandlerFunc := func(ctx *gin.Context) {
@@ -73,14 +69,11 @@ func InitializeRoutes(server *gin.Engine) {
 			// call service
 			resp := r.Handler(ctx.Request.Context(), appReq)
 			json.MarshalIndent(resp, "	", "\n")
-
 			if resp["token"] != nil {
 				ctx.Writer.Header().Set("Authorization", "Bearer "+resp["token"].(string))
 			}
-
 			ctx.JSON(resp["status"].(int), resp)
 			return
-
 		}
 		routeHandlers := append(r.Middlewares, ginHandlerFunc)
 		server.Handle(r.Method, r.GetPath(), routeHandlers...)
@@ -110,16 +103,13 @@ func extractData(ctx *gin.Context, appReq *AppReq) {
 			appReq.Body = jsonInput
 		}
 	} else {
-		var err error
-		appReq.Body, err = StructToMapStringInterface(body)
+		appReq.Body, _ = StructToMapStringInterface(body)
 		appReq.Body["confirmPassword"], _ = ctx.Get("confirmPassword")
-		fmt.Println(err)
 	}
 }
 
 // StructToMapStringInterface converts a struct to a map[string]interface{}.
 func StructToMapStringInterface(s interface{}) (map[string]interface{}, error) {
-
 	marshalledData, err := json.Marshal(s)
 	if err != nil {
 		return nil, err

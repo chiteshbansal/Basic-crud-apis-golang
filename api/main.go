@@ -28,7 +28,7 @@ func main() {
 
 	// Initialize user service with a repository
 	userService := &service.UserService{
-		Store: repository.UserStore{},
+		Store: &repository.UserStore{},
 	}
 
 	// Connect to the MySQL database using gorm
