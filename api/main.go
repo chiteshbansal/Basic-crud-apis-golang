@@ -11,6 +11,7 @@ import (
 	"first-api/api/repository"
 	"first-api/api/service"
 	db "first-api/database"
+	"first-api/pkg/cache"
 
 	// Import third party packages
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,8 @@ func main() {
 
 	// Initialize user service with a repository
 	userService := &service.UserService{
-		Store: &repository.UserStore{},
+		Store:     &repository.UserStore{},
+		UserCache: cache.NewRedisCache("localhost:6379", 0, 10),
 	}
 
 	// Connect to the MySQL database using gorm

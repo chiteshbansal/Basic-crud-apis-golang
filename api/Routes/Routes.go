@@ -37,7 +37,7 @@ type RouteDef struct {
 // GetPath constructs and returns the complete path for the route definition.
 func (r *RouteDef) GetPath() string {
 	// path creation logic
-	return r.Version + r.Path + "/"
+	return r.Version + r.Path 
 }
 
 var clientRoutes []RouteDef = []RouteDef{}

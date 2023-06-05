@@ -7,6 +7,8 @@ import (
 	route "first-api/api/Routes"
 	"first-api/api/repository"
 	"first-api/api/utils"
+	"first-api/pkg/cache"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -15,7 +17,8 @@ import (
 
 // UserService encapsulates use case logic for users.
 type UserService struct {
-	Store repository.UserStorer
+	Store     repository.UserStorer
+	UserCache cache.UserCache
 }
 
 // CreateUser creates a new user.
@@ -146,20 +149,35 @@ func (u *UserService) DeleteUser(ctx context.Context, req *route.AppReq) route.A
 // GetUser retrieves a user based on filter query.
 func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := req.Query["filter"] + "=" + req.Query["value"]
-	var user model.User
+	var user *model.User
 
-	err := u.Store.GetUser(&user, query)
-	if err != nil {
+	user = u.UserCache.Get(query)
+
+	if user == nil {
+		fmt.Println("Not cached!!")
+		user = &model.User{}
+		err := u.Store.GetUser(user, query)
+		if err != nil {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  err.Error(),
+			}
+		}
+		u.UserCache.Set(query, user)
+		user = u.UserCache.Get(query)
+		fmt.Println("fetching after setting", user)
 		return map[string]interface{}{
-			"status": http.StatusInternalServerError,
-			"error":  err.Error(),
+			"status": http.StatusOK,
+			"user":   user,
+		}
+	} else {
+		fmt.Println("using cached data")
+		return map[string]interface{}{
+			"status": http.StatusOK,
+			"user":   u.UserCache.Get(query),
 		}
 	}
 
-	return map[string]interface{}{
-		"status": http.StatusOK,
-		"user":   user,
-	}
 }
 
 func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppResp {
