@@ -30,7 +30,7 @@ func main() {
 	// Initialize user service with a repository
 	userService := &service.UserService{
 		Store:     &repository.UserStore{},
-		UserCache: cache.NewRedisCache("localhost:6379", 0, 10),
+		UserCache: cache.NewRedisCache("localhost:6379", 0, 1000),
 	}
 
 	// Connect to the MySQL database using gorm

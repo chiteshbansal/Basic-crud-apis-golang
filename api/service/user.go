@@ -1,3 +1,4 @@
+// Package service provides functionalities for user-related operations.
 package service
 
 import (
@@ -21,24 +22,22 @@ type UserService struct {
 	UserCache cache.UserCache
 }
 
-// CreateUser creates a new user.
+// CreateUser creates a new user by hashing the password and storing the user in the database.
 func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
-
-	jsonData, err := json.Marshal(req.Body)
+	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
 
-	password := req.Body["password"].(string)
-	confirmPassword := req.Body["confirmPassword"].(string)
-
-	if password != confirmPassword {
+	// Ensure the password and confirmation password match.
+	if req.Body["password"].(string) != req.Body["confirmPassword"].(string) {
 		return map[string]interface{}{
 			"status": http.StatusBadRequest,
 			"error":  "Password and confirm password do not match!",
 		}
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// Hash the password using bcrypt.
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Body["password"].(string)), bcrypt.DefaultCost)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
@@ -48,6 +47,7 @@ func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.A
 
 	user.Password = string(hashedPassword)
 
+	// Create the user in the database.
 	err = u.Store.CreateUser(&user)
 	if err != nil {
 		return map[string]interface{}{
@@ -56,16 +56,14 @@ func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.A
 		}
 	}
 
-	// Clear the password field in the response for security purposes
-	user.Password = ""
-
+	user.Password = "" // Clear the password for the response.
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"user":   user,
 	}
 }
 
-// GetUsers retrieves all users.
+// GetUsers retrieves all users from the database.
 func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
 	var users []model.User
 	err := u.Store.GetAllUsers(&users)
@@ -75,20 +73,17 @@ func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.App
 			"error":  err.Error(),
 		}
 	}
-
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"users":  users,
 	}
 }
 
-// UpdateUser updates user data based on ID.
+// UpdateUser updates a user in the database based on the given user ID.
 func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	id := req.Params["id"]
 	var user model.User
-	query := "id=" + id
-
-	err := u.Store.GetUser(&user, query)
+	err := u.Store.GetUser(&user, "id="+id)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
@@ -96,15 +91,13 @@ func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.A
 		}
 	}
 
-	jsonData, err := json.Marshal(req.Body)
+	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
 
-	// parse string to uint
-	val, _ := strconv.ParseUint(id, 10, 64)
+	val, _ := strconv.ParseUint(id, 10, 64) // Convert string to uint.
 	user.Id = uint(val)
 
-	u.Store.UpdateUser(&user, id)
-
+	err = u.Store.UpdateUser(&user, id)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
@@ -118,20 +111,21 @@ func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.A
 	}
 }
 
-// DeleteUser removes a user based on ID.
+// DeleteUser removes a user from the database based on the given user ID.
 func (u *UserService) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
 	id := req.Params["id"]
-	query := "id=" + id
-	err := u.Store.GetUser(&user, query)
+	err := u.Store.GetUser(&user, "id="+id)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
 			"error":  err.Error(),
 		}
 	}
-	jsonData, err := json.Marshal(req.Body)
+
+	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
+
 	err = u.Store.DeleteUser(&user, id)
 	if err != nil {
 		return map[string]interface{}{
@@ -139,14 +133,13 @@ func (u *UserService) DeleteUser(ctx context.Context, req *route.AppReq) route.A
 			"error":  err.Error(),
 		}
 	}
-
 	return map[string]interface{}{
 		"status":  http.StatusOK,
 		"message": "User with " + id + " is Deleted!",
 	}
 }
 
-// GetUser retrieves a user based on filter query.
+// GetUser retrieves a user from the cache if present, else retrieves from the database.
 func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := req.Query["filter"] + "=" + req.Query["value"]
 	var user *model.User
@@ -163,9 +156,7 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 				"error":  err.Error(),
 			}
 		}
-		u.UserCache.Set(query, user)
-		user = u.UserCache.Get(query)
-		fmt.Println("fetching after setting", user)
+		u.UserCache.Set(query, user) // Set the user in the cache.
 		return map[string]interface{}{
 			"status": http.StatusOK,
 			"user":   user,
@@ -177,15 +168,14 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 			"user":   u.UserCache.Get(query),
 		}
 	}
-
 }
 
+// Login verifies the user credentials, generates a JWT token and returns it.
 func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := "email=\"" + req.Body["email"].(string) + "\""
 	var user model.User
 
 	err := u.Store.GetUser(&user, query)
-
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
@@ -193,11 +183,7 @@ func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppRes
 		}
 	}
 
-	storedHash := user.Password
-	receivedPassword := req.Body["password"].(string)
-
-	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(receivedPassword))
-
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Body["password"].(string)))
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusBadRequest,
@@ -212,7 +198,6 @@ func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppRes
 			"error":  "Something went wrong",
 		}
 	}
-
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"token":  token,
