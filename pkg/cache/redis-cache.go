@@ -4,7 +4,6 @@ package cache
 import (
 	"context"
 	"encoding/json"
-	model "first-api/api/Models"
 	"fmt"
 	"time"
 
@@ -19,7 +18,7 @@ type redisCache struct {
 }
 
 // NewRedisCache returns a new instance of redisCache.
-func NewRedisCache(host string, db int, exp time.Duration) UserCache {
+func NewRedisCache(host string, db int, exp time.Duration) *redisCache {
 	return &redisCache{
 		host:    host,
 		db:      db,
@@ -48,47 +47,55 @@ func (cache *redisCache) getClient() *redis.Client {
 	return client
 }
 
-// Set stores the user object in the Redis cache against the provided key.
-func (cache *redisCache) Set(key string, user *model.User) {
-	fmt.Println("Caching the query: ", key, user)
+// Set stores the object in the Redis cache against the provided key.
+func (cache *redisCache) Set(key string, value interface{}, exp *time.Duration) error {
+	fmt.Println("Caching the query: ", key, value)
 
 	// Obtain the Redis client.
 	client := cache.getClient()
 
-	// Marshal user object into JSON.
-	json, err := json.Marshal(user)
+	// Marshal object into JSON.
+	json, err := json.Marshal(value)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	ctx := context.Background()
-	
+
 	// Set the key-value pair in the Redis cache with the expiry duration.
-	client.Set(ctx, key, json, cache.expires*time.Second)
+	if exp == nil {
+		err = client.Set(ctx, key, json, cache.expires*time.Second).Err()
+	} else {
+		err = client.Set(ctx, key, json, *exp).Err()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// Get retrieves the user object from the Redis cache for the given key.
-func (cache *redisCache) Get(key string) *model.User {
+// Get retrieves the object from the Redis cache for the given key.
+func (cache *redisCache) Get(key string) (value interface{}, err error) {
 	// Obtain the Redis client.
 	client := cache.getClient()
-	
+
 	ctx := context.Background()
 
 	// Get the value for the given key.
 	val, err := client.Get(ctx, key).Result()
 	if err != nil || val == "" {
 		// Return nil if an error occurred or if the key does not exist.
-		return nil
+		return nil, err
 	}
 
-	post := model.User{}
-
-	// Unmarshal the JSON value into the user struct.
-	err = json.Unmarshal([]byte(val), &post)
+	// Unmarshal the JSON value into the interface{}.
+	err = json.Unmarshal([]byte(val), &value)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	// Return the pointer to the user object.
-	return &post
+	// Return the interface{}.
+	return value, nil
 }

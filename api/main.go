@@ -60,11 +60,15 @@ func main() {
 func RegisterRoutes(userService *service.UserService) {
 	// Register GET route to retrieve all users.
 	route.RegisterRoutes(route.RouteDef{
-		Path:        "/user",
-		Version:     "v1",
-		Method:      "GET",
-		Handler:     userService.GetUsers,
-		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
+		Path:    "/user",
+		Version: "v1",
+		Method:  "GET",
+		Handler: userService.GetUsers,
+		Middlewares: []gin.HandlerFunc{
+			func(ctx *gin.Context) {
+				middleware.VerifyJWT(ctx, userService.UserCache)
+			},
+		},
 	})
 
 	// Register POST route to create a new user. Includes a middleware to validate user data.
@@ -82,8 +86,9 @@ func RegisterRoutes(userService *service.UserService) {
 		Version: "v1",
 		Method:  "PUT",
 		Handler: userService.UpdateUser,
-		Middlewares: []gin.HandlerFunc{middleware.
-			VerifyJWT, middleware.ValidateUserData},
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache)
+		}, middleware.ValidateUserData},
 	})
 
 	// Register DELETE route to remove a user.
@@ -92,8 +97,9 @@ func RegisterRoutes(userService *service.UserService) {
 		Version: "v1",
 		Method:  "DELETE",
 		Handler: userService.DeleteUser,
-		Middlewares: []gin.HandlerFunc{middleware.
-			VerifyJWT, middleware.ValidateUserData},
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache)
+		}, middleware.ValidateUserData},
 	})
 
 	// Register GET route to retrieve a user based on filters.
@@ -102,8 +108,9 @@ func RegisterRoutes(userService *service.UserService) {
 		Version: "v1",
 		Method:  "GET",
 		Handler: userService.GetUser,
-		Middlewares: []gin.HandlerFunc{middleware.
-			VerifyJWT},
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache)
+		}},
 	})
 	route.RegisterRoutes(route.RouteDef{
 		Path:    "/user/login",

@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	model "first-api/api/Models"
 	route "first-api/api/Routes"
 	"first-api/api/repository"
@@ -144,9 +145,9 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 	query := req.Query["filter"] + "=" + req.Query["value"]
 	var user *model.User
 
-	user = u.UserCache.Get(query)
+	userInterface, _ := u.UserCache.Get(query)
 
-	if user == nil {
+	if userInterface == nil {
 		fmt.Println("Not cached!!")
 		user = &model.User{}
 		err := u.Store.GetUser(user, query)
@@ -156,16 +157,43 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 				"error":  err.Error(),
 			}
 		}
-		u.UserCache.Set(query, user) // Set the user in the cache.
+		u.UserCache.Set(query, user, nil) // Set the user in the cache.
 		return map[string]interface{}{
 			"status": http.StatusOK,
 			"user":   user,
 		}
 	} else {
+		userInterface, _ := u.UserCache.Get(query)
+		userMap, ok := userInterface.(map[string]interface{})
+		if !ok {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  errors.New("userInterface is not mapStringInterface"),
+			}
+		}
+
+		// Now you can unmarshal userMap into your user struct.
+		userBytes, err := json.Marshal(userMap)
+		if err != nil {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  errors.New("json Marshal failed!!"),
+			}
+		}
+
+		var user *model.User
+		err = json.Unmarshal(userBytes, &user)
+		if err != nil {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  errors.New("JSON unmarshal failed"),
+			}
+		}
+
 		fmt.Println("using cached data")
 		return map[string]interface{}{
 			"status": http.StatusOK,
-			"user":   u.UserCache.Get(query),
+			"user":   user,
 		}
 	}
 }
