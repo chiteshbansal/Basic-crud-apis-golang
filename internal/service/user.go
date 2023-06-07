@@ -7,7 +7,6 @@ import (
 	"first-api/internal/repository"
 	route "first-api/internal/routes"
 	"first-api/internal/utils"
-	"first-api/pkg/cache"
 	"net/http"
 	"strconv"
 
@@ -16,15 +15,7 @@ import (
 
 // User encapsulates use case logic for users.
 type User struct {
-	Store     repository.UserStorer
-	UserCache cache.UserCache
-}
-
-func NewUser(store repository.UserStorer, userCache cache.UserCache) *User {
-	return &User{
-		Store:     store,
-		UserCache: userCache,
-	}
+	Store repository.UserStorer
 }
 
 // CreateUser creates a new user.

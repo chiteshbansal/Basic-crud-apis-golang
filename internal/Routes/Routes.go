@@ -42,13 +42,13 @@ func (r *RouteDef) GetPath() string {
 
 var clientroutes []RouteDef = []RouteDef{}
 
-// Registerroutes adds a route definition to the list of client routes.
-func Registerroutes(r RouteDef) {
+// RegisterRoutes adds a route definition to the list of client routes.
+func RegisterRoutes(r RouteDef) {
 	clientroutes = append(clientroutes, r)
 }
 
-// Initializeroutes initializes the routes on the given gin engine.
-func Initializeroutes(server *gin.Engine) {
+// InitializeRoutes initializes the routes on the given gin engine.
+func InitializeRoutes(server *gin.Engine) {
 	//common middleware that sits in between framework and service and do transformation request set to app and response received from service
 	// component
 	for _, route := range clientroutes {
