@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"encoding/json"
-	model "first-api/api/Models"
-	"first-api/api/repository"
-	"first-api/api/utils"
-	route "first-api/internal/Routes"
+	model "first-api/internal/models"
+	"first-api/internal/repository"
+	route "first-api/internal/routes"
+	"first-api/internal/utils"
 	"first-api/pkg/cache"
 	"net/http"
 	"strconv"
@@ -14,21 +14,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// UserService encapsulates use case logic for users.
-type UserService struct {
+// User encapsulates use case logic for users.
+type User struct {
 	Store     repository.UserStorer
 	UserCache cache.UserCache
 }
 
-func NewUserService(store repository.UserStorer, userCache cache.UserCache) *UserService {
-	return &UserService{
+func NewUser(store repository.UserStorer, userCache cache.UserCache) *User {
+	return &User{
 		Store:     store,
 		UserCache: userCache,
 	}
 }
 
 // CreateUser creates a new user.
-func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.AppResp {
+func (u *User) CreateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
 
 	jsonData, err := json.Marshal(req.Body)
@@ -72,7 +72,7 @@ func (u *UserService) CreateUser(ctx context.Context, req *route.AppReq) route.A
 }
 
 // GetUsers retrieves all users.
-func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
+func (u *User) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
 	var users []model.User
 	err := u.Store.GetAllUsers(&users)
 	if err != nil {
@@ -89,7 +89,7 @@ func (u *UserService) GetUsers(ctx context.Context, req *route.AppReq) route.App
 }
 
 // UpdateUser updates user data based on ID.
-func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp {
+func (u *User) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	id := req.Params["id"]
 	var user model.User
 	query := "id=" + id
@@ -125,7 +125,7 @@ func (u *UserService) UpdateUser(ctx context.Context, req *route.AppReq) route.A
 }
 
 // DeleteUser removes a user based on ID.
-func (u *UserService) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp {
+func (u *User) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
 	id := req.Params["id"]
 	query := "id=" + id
@@ -153,7 +153,7 @@ func (u *UserService) DeleteUser(ctx context.Context, req *route.AppReq) route.A
 }
 
 // GetUser retrieves a user based on filter query.
-func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
+func (u *User) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := req.Query["filter"] + "=" + req.Query["value"]
 	var user model.User
 
@@ -171,7 +171,7 @@ func (u *UserService) GetUser(ctx context.Context, req *route.AppReq) route.AppR
 	}
 }
 
-func (u *UserService) Login(ctx context.Context, req *route.AppReq) route.AppResp {
+func (u *User) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := "email=\"" + req.Body["email"].(string) + "\""
 	var user model.User
 

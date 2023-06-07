@@ -3,7 +3,6 @@ package utils
 import (
 	"time"
 
-	// "github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/spf13/viper"
 )

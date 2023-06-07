@@ -2,13 +2,13 @@ package test
 
 import (
 	"encoding/json"
-	model "first-api/api/Models"
-	route "first-api/internal/Routes"
-	middleware "first-api/api/middlewares"
-	// "first-api/api/repository"
-	"first-api/api/service"
-	"first-api/api/utils"
+	middleware "first-api/internal/middlewares"
+	model "first-api/internal/models"
+	route "first-api/internal/routes"
+	// "first-api/internal/repository"
 	"bytes"
+	"first-api/internal/service"
+	"first-api/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -68,12 +68,12 @@ func (m *MockRepo) DeleteUser(b *model.User, id string) (err error) {
 }
 
 // initializeTest() instantiates a MockRepo and creates a new Controller with this MockRepo as its Repo field. It also creates a new default gin.Engine and returns all three.
-func initializeTest() (*MockRepo, service.UserService, *gin.Engine) {
+func initializeTest() (*MockRepo, service.User, *gin.Engine) {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
 	gin.SetMode(gin.TestMode)
 	mockRepo := new(MockRepo)
-	userService := service.UserService{Store: mockRepo}
+	userService := service.User{Store: mockRepo}
 	return mockRepo, userService, gin.Default()
 }
 
@@ -85,7 +85,7 @@ func TestGetAllSong(t *testing.T) {
 	}
 
 	mockRepo, userService, router := initializeTest()
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:        "/user",
 		Version:     "v1",
 		Method:      "GET",
@@ -93,7 +93,7 @@ func TestGetAllSong(t *testing.T) {
 		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
 	})
 
-	route.InitializeRoutes(router)
+	route.Initializeroutes(router)
 	mockRepo.On("GetAllUsers", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		arg := args.Get(0).(*[]model.User)
 		*arg = users
@@ -128,14 +128,14 @@ func TestCreateUser(t *testing.T) {
 		*arg = *user
 	})
 
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:        "/user",
 		Version:     "v1",
 		Method:      "POST",
 		Handler:     userService.CreateUser,
 		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT, middleware.ValidateUserData},
 	})
-	route.InitializeRoutes(router)
+	route.Initializeroutes(router)
 	AppReq, _ := route.StructToMapStringInterface(user)
 	AppReq["confirmPassword"] = "pass123"
 
@@ -162,14 +162,14 @@ func TestGetUser(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
 	user := &model.User{Id: 1, Name: "test user", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
 
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:        "/user/filter",
 		Version:     "v1",
 		Method:      "GET",
 		Handler:     userService.GetUser,
 		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
 	})
-	route.InitializeRoutes(router)
+	route.Initializeroutes(router)
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
 	req, _ := http.NewRequest("GET", "/v1/user/filter/?filter=id&value=1", nil)
@@ -198,14 +198,14 @@ func TestGetUser(t *testing.T) {
 // TestUpdateSong function tests the UpdateSong function of Controller
 func TestUpdateSong(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:        "/user/:id",
 		Version:     "v1",
 		Method:      "PUT",
 		Handler:     userService.UpdateUser,
 		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT, middleware.ValidateUserData},
 	})
-	route.InitializeRoutes(router)
+	route.Initializeroutes(router)
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 	mockRepo.On("UpdateUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
@@ -231,14 +231,14 @@ func TestUpdateSong(t *testing.T) {
 // TestDeleteSong function tests the DeleteSong function of Controller
 func TestDeleteUser(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:        "/user/:id",
 		Version:     "v1",
 		Method:      "DELETE",
 		Handler:     userService.DeleteUser,
 		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
 	})
-	route.InitializeRoutes(router)
+	route.Initializeroutes(router)
 
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 

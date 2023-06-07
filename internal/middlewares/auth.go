@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/spf13/viper"

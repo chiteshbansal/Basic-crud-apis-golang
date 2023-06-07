@@ -37,21 +37,21 @@ type RouteDef struct {
 // GetPath constructs and returns the complete path for the route definition.
 func (r *RouteDef) GetPath() string {
 	// path creation logic
-	return r.Version + r.Path 
+	return r.Version + r.Path
 }
 
-var clientRoutes []RouteDef = []RouteDef{}
+var clientroutes []RouteDef = []RouteDef{}
 
-// RegisterRoutes adds a route definition to the list of client routes.
-func RegisterRoutes(r RouteDef) {
-	clientRoutes = append(clientRoutes, r)
+// Registerroutes adds a route definition to the list of client routes.
+func Registerroutes(r RouteDef) {
+	clientroutes = append(clientroutes, r)
 }
 
-// InitializeRoutes initializes the routes on the given gin engine.
-func InitializeRoutes(server *gin.Engine) {
+// Initializeroutes initializes the routes on the given gin engine.
+func Initializeroutes(server *gin.Engine) {
 	//common middleware that sits in between framework and service and do transformation request set to app and response received from service
 	// component
-	for _, route := range clientRoutes {
+	for _, route := range clientroutes {
 		r := route
 		ginHandlerFunc := func(ctx *gin.Context) {
 

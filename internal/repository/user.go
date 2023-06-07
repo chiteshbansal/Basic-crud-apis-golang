@@ -2,8 +2,8 @@
 package repository
 
 import (
-	model "first-api/api/Models"
-	db "first-api/database"
+	db "first-api/internal/database"
+	model "first-api/internal/models"
 )
 
 // UserStorer is the interface that wraps the methods for manipulating and validating User data.

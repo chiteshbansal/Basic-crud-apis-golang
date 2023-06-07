@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	// Import custom packages
-	model "first-api/api/Models"
-	middleware "first-api/api/middlewares"
-	"first-api/api/repository"
-	"first-api/api/service"
-	db "first-api/database"
-	route "first-api/internal/Routes"
+	db "first-api/internal/database"
+	middleware "first-api/internal/middlewares"
+	model "first-api/internal/models"
+	"first-api/internal/repository"
+	route "first-api/internal/routes"
+	"first-api/internal/service"
 	"first-api/pkg/cache"
 
 	// Import third party packages
@@ -28,7 +28,7 @@ func main() {
 	viper.ReadInConfig()          // read the .env file
 
 	// Initialize user service with a repository
-	userService := service.NewUserService(
+	userService := service.NewUser(
 		&repository.UserStore{},
 		cache.NewRedisCache("localhost:6379", 0, 10),
 	)
@@ -49,17 +49,17 @@ func main() {
 	r := gin.Default()
 
 	// Register routes
-	RegisterRoutes(userService) // register user service related routes
-	route.InitializeRoutes(r)   // initialize other routes
+	Registerroutes(userService) // register user service related routes
+	route.Initializeroutes(r)   // initialize other routes
 
 	// Run the gin engine
 	r.Run()
 }
 
-// RegisterRoutes function registers routes for the user service.
-func RegisterRoutes(userService *service.UserService) {
+// Registerroutes function registers routes for the user service.
+func Registerroutes(userService *service.User) {
 	// Register GET route to retrieve all users.
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:        "/user",
 		Version:     "v1",
 		Method:      "GET",
@@ -68,7 +68,7 @@ func RegisterRoutes(userService *service.UserService) {
 	})
 
 	// Register POST route to create a new user. Includes a middleware to validate user data.
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:        "/user",
 		Version:     "v1",
 		Method:      "POST",
@@ -77,7 +77,7 @@ func RegisterRoutes(userService *service.UserService) {
 	})
 
 	// Register PUT route to update a user. Includes a middleware to validate user data.
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:    "/user/:id",
 		Version: "v1",
 		Method:  "PUT",
@@ -87,7 +87,7 @@ func RegisterRoutes(userService *service.UserService) {
 	})
 
 	// Register DELETE route to remove a user.
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:    "/user/:id",
 		Version: "v1",
 		Method:  "DELETE",
@@ -97,7 +97,7 @@ func RegisterRoutes(userService *service.UserService) {
 	})
 
 	// Register GET route to retrieve a user based on filters.
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:    "/user/filter",
 		Version: "v1",
 		Method:  "GET",
@@ -105,7 +105,7 @@ func RegisterRoutes(userService *service.UserService) {
 		Middlewares: []gin.HandlerFunc{middleware.
 			VerifyJWT},
 	})
-	route.RegisterRoutes(route.RouteDef{
+	route.Registerroutes(route.RouteDef{
 		Path:    "/user/login",
 		Version: "v1",
 		Method:  "POST",

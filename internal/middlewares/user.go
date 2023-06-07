@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	model "first-api/api/Models"
+	model "first-api/internal/models"
 	"fmt"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"

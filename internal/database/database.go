@@ -9,8 +9,8 @@ import (
 
 var DB *gorm.DB
 
-// DBConfig represents db configuration
-type Config struct {
+// dbConfig represents db configuration
+type config struct {
 	Host     string
 	Port     int
 	User     string
@@ -18,12 +18,12 @@ type Config struct {
 	Password string
 }
 
-func BuildConfig() *Config {
+func BuildConfig() *config {
 
 	viper.SetConfigFile("../.env")
 	viper.ReadInConfig()
 
-	dbConfig := Config{
+	dbConfig := config{
 		Host:     viper.GetString("HOST"),
 		Port:     viper.GetInt("PORT"),
 		User:     viper.GetString("USERNAME"),
@@ -32,7 +32,7 @@ func BuildConfig() *Config {
 	}
 	return &dbConfig
 }
-func DbURL(dbConfig *Config) string {
+func DbURL(dbConfig *config) string {
 	return fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 		dbConfig.User,
