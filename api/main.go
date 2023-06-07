@@ -6,11 +6,12 @@ import (
 
 	// Import custom packages
 	model "first-api/api/Models"
-	route "first-api/api/Routes"
 	middleware "first-api/api/middlewares"
 	"first-api/api/repository"
 	"first-api/api/service"
 	db "first-api/database"
+	route "first-api/internal/Routes"
+	"first-api/pkg/cache"
 
 	// Import third party packages
 	"github.com/gin-gonic/gin"
@@ -27,9 +28,10 @@ func main() {
 	viper.ReadInConfig()          // read the .env file
 
 	// Initialize user service with a repository
-	userService := &service.UserService{
-		Store: &repository.UserStore{},
-	}
+	userService := service.NewUserService(
+		&repository.UserStore{},
+		cache.NewRedisCache("localhost:6379", 0, 10),
+	)
 
 	// Connect to the MySQL database using gorm
 	db.DB, err = gorm.Open("mysql", db.DbURL(db.BuildConfig()))

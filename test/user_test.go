@@ -3,7 +3,7 @@ package test
 import (
 	"encoding/json"
 	model "first-api/api/Models"
-	route "first-api/api/Routes"
+	route "first-api/internal/Routes"
 	middleware "first-api/api/middlewares"
 	// "first-api/api/repository"
 	"first-api/api/service"

@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	model "first-api/api/Models"
-	route "first-api/api/Routes"
 	"first-api/api/repository"
 	"first-api/api/utils"
+	route "first-api/internal/Routes"
+	"first-api/pkg/cache"
 	"net/http"
 	"strconv"
 
@@ -15,7 +16,15 @@ import (
 
 // UserService encapsulates use case logic for users.
 type UserService struct {
-	Store repository.UserStorer
+	Store     repository.UserStorer
+	UserCache cache.UserCache
+}
+
+func NewUserService(store repository.UserStorer, userCache cache.UserCache) *UserService {
+	return &UserService{
+		Store:     store,
+		UserCache: userCache,
+	}
 }
 
 // CreateUser creates a new user.
