@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	middleware "first-api/internal/middlewares"
 	model "first-api/internal/models"
-	route "first-api/internal/routes"
+	route "first-api/internal/route"
 	// "first-api/internal/repository"
 	"bytes"
 	"first-api/internal/service"

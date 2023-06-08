@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	model "first-api/internal/models"
 	"first-api/internal/repository"
-	route "first-api/internal/routes"
+	route "first-api/internal/route"
 	"first-api/internal/utils"
 	"net/http"
 	"strconv"

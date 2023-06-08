@@ -8,10 +8,6 @@ import (
 )
 
 func GenerateJWT(email string) (string, error) {
-
-	viper.SetConfigFile("../.env")
-	viper.ReadInConfig()
-
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["exp"] = time.Now().Add(2 * time.Hour).Unix()
@@ -22,6 +18,5 @@ func GenerateJWT(email string) (string, error) {
 	if err != nil {
 		return " ", err
 	}
-
 	return tokenString, nil
 }

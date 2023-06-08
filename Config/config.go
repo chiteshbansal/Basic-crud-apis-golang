@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/spf13/viper"
 )
 
 type config struct {
@@ -11,20 +10,3 @@ type config struct {
 	Password string `mapstructure:"PASSWORD"`
 }
 
-func Loadconfig() (c config, err error) {
-	viper.AddConfigPath("../")
-	viper.SetConfigName("dev")
-	viper.SetConfigType("env")
-
-	viper.AutomaticEnv()
-
-	err = viper.ReadInConfig()
-
-	if err != nil {
-		return
-	}
-
-	err = viper.Unmarshal(&c)
-
-	return
-}

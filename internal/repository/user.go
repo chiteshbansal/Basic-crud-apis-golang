@@ -4,6 +4,7 @@ package repository
 import (
 	db "first-api/internal/database"
 	model "first-api/internal/models"
+	"fmt"
 )
 
 // UserStorer is the interface that wraps the methods for manipulating and validating User data.
@@ -30,6 +31,7 @@ func (e *CustomError) Error() string {
 
 // CreateUser creates a user in the database.
 func (u *UserStore) CreateUser(user *model.User) error {
+	fmt.Println("DB:", db.DB)
 	if err := db.DB.Create(user).Error; err != nil {
 		return &CustomError{Message: "User cannot be Created "}
 	}
