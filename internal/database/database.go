@@ -1,6 +1,7 @@
 package db
 
 import (
+	model "first-api/internal/models"
 	"fmt"
 
 	"github.com/jinzhu/gorm"
@@ -9,8 +10,8 @@ import (
 
 var DB *gorm.DB
 
-// DBConfig represents db configuration
-type Config struct {
+// dbConfig represents db configuration
+type config struct {
 	Host     string
 	Port     int
 	User     string
@@ -18,12 +19,23 @@ type Config struct {
 	Password string
 }
 
-func BuildConfig() *Config {
+func NewDB() {
+	// Connect to the MySQL database using gorm
+	var err error
+	DB, err = gorm.Open("mysql", DbURL(BuildConfig()))
+	if err != nil {
+		fmt.Println("Status:", err)
+	}
 
-	viper.SetConfigFile("../.env")
-	viper.ReadInConfig()
 
-	dbConfig := Config{
+	// Automigrate user model, this will create the user table in the database
+	DB.AutoMigrate(&model.User{})
+}
+
+func BuildConfig() *config {
+
+	fmt.Println(viper.GetString("DBNAME"))
+	dbConfig := config{
 		Host:     viper.GetString("HOST"),
 		Port:     viper.GetInt("PORT"),
 		User:     viper.GetString("USERNAME"),
@@ -32,7 +44,8 @@ func BuildConfig() *Config {
 	}
 	return &dbConfig
 }
-func DbURL(dbConfig *Config) string {
+
+func DbURL(dbConfig *config) string {
 	return fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 		dbConfig.User,
