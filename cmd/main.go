@@ -30,7 +30,8 @@ func main() {
 	r := gin.Default()
 
 	// Register routes
-	server.RegisterRoutes()   // register user service related routes
+	server.RegisterRoutes(r) // register user service related routes
+
 	route.InitializeRoutes(r) // initialize other routes
 
 	// Run the gin engine
