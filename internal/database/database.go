@@ -27,9 +27,8 @@ func NewDB() {
 		fmt.Println("Status:", err)
 	}
 
-
 	// Automigrate user model, this will create the user table in the database
-	DB.AutoMigrate(&model.User{})
+	DB.AutoMigrate(&model.User{}, &model.Post{}, &model.Comment{})
 }
 
 func BuildConfig() *config {
