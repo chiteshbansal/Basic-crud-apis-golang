@@ -10,10 +10,8 @@ import (
 	route "first-api/internal/route"
 	"first-api/internal/utils"
 	"first-api/pkg/cache"
-	"fmt"
 	"net/http"
 	"strconv"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -142,13 +140,19 @@ func (u *User) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp 
 
 // GetUser retrieves a user from the cache if present, else retrieves from the database.
 func (u *User) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
-	query := req.Query["filter"] + "=" + req.Query["value"]
+	var query string
+	if req.Query["filter"] == "email" {
+		query = "email=\"" + req.Query["value"] + "\""
+
+	} else {
+
+		query = req.Query["filter"] + "=" + req.Query["value"]
+	}
 	var user *model.User
 
 	userInterface, _ := u.UserCache.Get(query)
 
 	if userInterface == nil {
-		fmt.Println("Not cached!!")
 		user = &model.User{}
 		err := u.Store.GetUser(user, query)
 		if err != nil {
@@ -189,8 +193,6 @@ func (u *User) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
 				"error":  errors.New("JSON unmarshal failed"),
 			}
 		}
-
-		fmt.Println("using cached data")
 		return map[string]interface{}{
 			"status": http.StatusOK,
 			"user":   user,
@@ -219,7 +221,7 @@ func (u *User) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 		}
 	}
 
-	token, err := utils.GenerateJWT(user.Email)
+	token, err := utils.GenerateJWT(&user)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,

@@ -70,12 +70,12 @@ func (m *MockRepo) DeleteUser(b *model.User, id string) (err error) {
 }
 
 // initializeTest() instantiates a MockRepo and creates a new Controller with this MockRepo as its Repo field. It also creates a new default gin.Engine and returns all three.
-func initializeTest() (*MockRepo, service.UserService, *gin.Engine) {
+func initializeTest() (*MockRepo, service.User, *gin.Engine) {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
 	gin.SetMode(gin.TestMode)
 	mockRepo := new(MockRepo)
-	userService := service.UserService{Store: mockRepo, UserCache: cache.NewRedisCache("localhost:6379", 0, 1000)}
+	userService := service.User{Store: mockRepo, UserCache: cache.NewRedisCache("localhost:6379", 0, 1000)}
 	return mockRepo, userService, gin.Default()
 }
 
@@ -93,7 +93,7 @@ func TestGetAllSong(t *testing.T) {
 		Method:  "GET",
 		Handler: userService.GetUsers,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache)
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
 		}},
 	})
 
@@ -104,7 +104,7 @@ func TestGetAllSong(t *testing.T) {
 	})
 
 	req, _ := http.NewRequest("GET", "/v1/user", nil)
-	token, _ := utils.GenerateJWT("test@test.com")
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -138,7 +138,7 @@ func TestCreateUser(t *testing.T) {
 		Method:  "POST",
 		Handler: userService.CreateUser,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache)
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
 		}, middleware.ValidateUserData},
 	})
 	route.InitializeRoutes(router)
@@ -147,7 +147,7 @@ func TestCreateUser(t *testing.T) {
 
 	body, _ := json.Marshal(AppReq)
 	req, _ := http.NewRequest("POST", "/v1/user", bytes.NewBuffer(body))
-	token, _ := utils.GenerateJWT("test@test.com")
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -174,14 +174,14 @@ func TestGetUser(t *testing.T) {
 		Method:  "GET",
 		Handler: userService.GetUser,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache)
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
 		}},
 	})
 	route.InitializeRoutes(router)
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
 	req, _ := http.NewRequest("GET", "/v1/user/filter?filter=id&value=1", nil)
-	token, _ := utils.GenerateJWT("test@test.com")
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -212,7 +212,7 @@ func TestUpdateSong(t *testing.T) {
 		Method:  "PUT",
 		Handler: userService.UpdateUser,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache)
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
 		}, middleware.ValidateUserData},
 	})
 	route.InitializeRoutes(router)
@@ -225,7 +225,7 @@ func TestUpdateSong(t *testing.T) {
 
 	body, _ := json.Marshal(AppReq)
 	req, _ := http.NewRequest("PUT", "/v1/user/1", bytes.NewBuffer(body))
-	token, _ := utils.GenerateJWT("test@test.com")
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -247,7 +247,7 @@ func TestDeleteUser(t *testing.T) {
 		Method:  "DELETE",
 		Handler: userService.DeleteUser,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache)
+			middleware.VerifyJWT(ctx, userService.UserCache, "admin")
 		}},
 	})
 	route.InitializeRoutes(router)
@@ -257,7 +257,7 @@ func TestDeleteUser(t *testing.T) {
 	mockRepo.On("DeleteUser", mock.AnythingOfType("*model.User"), "1").Return(nil)
 
 	req, _ := http.NewRequest("DELETE", "/v1/user/1", nil)
-	token, _ := utils.GenerateJWT("test@test.com")
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)

@@ -6,8 +6,9 @@ type User struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
-	Address  string `json:"address"`
+	Address  string `json:"address" gorm:"omitempty"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
 }
 
 // TableName returns the name of the corresponding database table for the User model.

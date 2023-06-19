@@ -37,7 +37,7 @@ type RouteDef struct {
 // GetPath constructs and returns the complete path for the route definition.
 func (r *RouteDef) GetPath() string {
 	// path creation logic
-	return r.Version + r.Path 
+	return r.Version + r.Path
 }
 
 var clientroutes []RouteDef = []RouteDef{}
@@ -68,7 +68,7 @@ func InitializeRoutes(server *gin.Engine) {
 
 			// call service
 			resp := r.Handler(ctx.Request.Context(), appReq)
-			json.MarshalIndent(resp, "	", "\n")
+			json.MarshalIndent(resp, "	", "  ")
 			if resp["token"] != nil {
 				ctx.Writer.Header().Set("Authorization", "Bearer "+resp["token"].(string))
 			}
@@ -102,9 +102,15 @@ func extractData(ctx *gin.Context, appReq *AppReq) {
 		if err := ctx.BindJSON(&jsonInput); err == nil {
 			appReq.Body = jsonInput
 		}
+		for k, v := range ctx.Keys {
+			appReq.Body[k] = v
+		}
 	} else {
 		appReq.Body, _ = StructToMapStringInterface(body)
 		appReq.Body["confirmPassword"], _ = ctx.Get("confirmPassword")
+		for k, v := range ctx.Keys {
+			appReq.Body[k] = v
+		}
 	}
 }
 
