@@ -77,7 +77,7 @@ func VerifyJWT(ctx *gin.Context, cache cache.UserCache, role string) {
 
 			cache.Set(tokenString, "true", &remainingTime)
 
-			userId, ok := claims["id"]
+			userId, _ := claims["id"]
 			ctx.Set("userId", userId)
 			ctx.Set("role", userRole)
 

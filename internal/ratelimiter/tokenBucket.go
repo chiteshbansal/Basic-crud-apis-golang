@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +13,7 @@ var (
 )
 
 type TokenBucket struct {
-	limit    int
+	Limit    int
 	tokens   int
 	rate     int
 	mu       sync.Mutex
@@ -24,12 +23,11 @@ type TokenBucket struct {
 // NewTokenBucket creates a new TokenBucket with the specified limit, rate, and duration.
 func NewTokenBucket(limit, rate int, duration time.Time) {
 	TB = &TokenBucket{
-		limit:    limit,
+		Limit:    limit,
 		tokens:   limit,
 		rate:     rate,
 		duration: duration,
 	}
-
 }
 
 func GetTokenBucket() *TokenBucket {
@@ -39,8 +37,8 @@ func GetTokenBucket() *TokenBucket {
 // Take attempts to take a token from the TokenBucket.
 // Returns true if a token is taken, false otherwise.
 func (tb *TokenBucket) Take(c *gin.Context, redisClient cache.UserCache) bool {
-	TB.mu.Lock()
-	defer TB.mu.Unlock()
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
 
 	// Key to identify the token bucket in Redis
 	key := "token_bucket"
@@ -48,46 +46,47 @@ func (tb *TokenBucket) Take(c *gin.Context, redisClient cache.UserCache) bool {
 	now := time.Now()
 
 	// Calculate the number of tokens to add since the last request
-	fmt.Println(now, TB.duration)
-	elapsed := now.Sub(TB.duration)
-	fmt.Println(elapsed.Seconds(), elapsed, time.Second, (float64(elapsed.Nanoseconds()) / float64(time.Second)))
-	tokensToAdd := int(float64(elapsed.Nanoseconds()) / float64(time.Second) * float64(TB.rate))
+	elapsed := now.Sub(tb.duration)
+	tokensToAdd := int(float64(elapsed.Nanoseconds()) / float64(time.Second) * float64(tb.rate))
 
-	// Refill tokens up to the limit
-	fmt.Println("tokens add", tokensToAdd)
-	TB.tokens += tokensToAdd
-	if TB.tokens > TB.limit {
-		TB.tokens = TB.limit
+	// Fetch the current token count from Redis
+	resultInterface, err := redisClient.Get(key)
+	if err != nil {
+		fmt.Println("Failed to retrieve token count from Redis:", err)
+		return false
 	}
 
-	// Check if there re enough tokens to take
-	if TB.tokens > 0 {
-		fmt.Println("under limit Passing the req")
-		TB.tokens--
-		TB.duration = now
-		return true
+	var result int
+	result, ok := resultInterface.(int)
+	if !ok {
+		// Handle the case when the underlying value is not an int
+		// Convert the float64 value to int before using it
+		result = int(resultInterface.(float64))
+	}
 
-		// Check the current token count in Redis
-		resultInterface, err := redisClient.Get(key)
-		if err != nil || resultInterface == nil {
-			fmt.Println("Failed to retrieve token count from Redis:", err)
-			return false
+	// Add the new tokens to the fetched token count
+	result += tokensToAdd
+
+	if result > tb.Limit {
+		result = tb.Limit
+	}
+
+	// Check if there are enough tokens to take
+	if result > 0 {
+		// Decrement the token count in Redis
+		result--
+		err := redisClient.Set(key, result, nil)
+		if err != nil {
+			fmt.Println("Failed to update token count in Redis:", err)
 		}
-		result := resultInterface.(int)
-		// Update the token count in Redis
-		result -= 1
-		if result >= 0 {
-			err := redisClient.Set(key, result, nil)
-			if err != nil {
-				fmt.Println("Failed to update token count in Redis:", err)
-			}
-			return true
-		}
+
+		// Update the local token count and duration
+		tb.tokens = result
+		tb.duration = now
+
+		return true
 	} else {
 		fmt.Println("Request denied")
 		return false
 	}
-
-	return false
-
 }
