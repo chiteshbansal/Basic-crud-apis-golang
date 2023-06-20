@@ -40,18 +40,18 @@ func TestTokenBucketMiddleware(t *testing.T) {
 	rateLimiterCache := &RateLimiterCache{}
 
 	// Create a new TokenBucket and set the initial token count in the cache
-	ratelimiter.NewTokenBucket(100, 1, time.Now())
-	tb := ratelimiter.GetTokenBucket()
+
+	tb := ratelimiter.NewTokenBucket(100, 1, time.Now())
 
 	// Set up the mock expectations for the cache calls
 	rateLimiterCache.On("Set", "token_bucket", 99, mock.AnythingOfType("*time.Duration")).Return(nil)
 	rateLimiterCache.On("Get", "token_bucket").Return(tb.Limit+1, nil)
-
+	
 	// Create a new Gin router and apply the middleware
 	router := gin.New()
 	router.Use(func(ctx *gin.Context) {
 		fmt.Println("Using the ratelimiter middleware")
-		middleware.RateLimitMiddleware(ctx, rateLimiterCache, ratelimiter.GetTokenBucket())
+		middleware.RateLimitMiddleware(ctx, rateLimiterCache, tb)
 	})
 
 	// Define a test route
