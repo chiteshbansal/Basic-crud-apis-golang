@@ -18,6 +18,7 @@ type CreateUserRequest struct {
 	Address         string `json:"address"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirmPassword"`
+	Role            string `json:"role"`
 }
 
 // ValidateUserData is a middleware function that validates user data from the request body.
@@ -52,6 +53,7 @@ func ValidateUserData(ctx *gin.Context) {
 		Password: reqBody.Password,
 		Phone:    reqBody.Phone,
 		Address:  reqBody.Address,
+		Role:     reqBody.Role,
 	}
 	confirmPassword := reqBody.ConfirmPassword
 

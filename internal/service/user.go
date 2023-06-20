@@ -1,41 +1,42 @@
+// Package service provides functionalities for user-related operations.
 package service
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	model "first-api/internal/models"
 	"first-api/internal/repository"
 	route "first-api/internal/route"
 	"first-api/internal/utils"
+	"first-api/pkg/cache"
 	"net/http"
 	"strconv"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
 // User encapsulates use case logic for users.
 type User struct {
-	Store repository.UserStorer
+	Store     repository.UserStorer
+	UserCache cache.UserCache
 }
 
-// CreateUser creates a new user.
+// CreateUser creates a new user by hashing the password and storing the user in the database.
 func (u *User) CreateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
-
-	jsonData, err := json.Marshal(req.Body)
+	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
 
-	password := req.Body["password"].(string)
-	confirmPassword := req.Body["confirmPassword"].(string)
-
-	if password != confirmPassword {
+	// Ensure the password and confirmation password match.
+	if req.Body["password"].(string) != req.Body["confirmPassword"].(string) {
 		return map[string]interface{}{
 			"status": http.StatusBadRequest,
 			"error":  "Password and confirm password do not match!",
 		}
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// Hash the password using bcrypt.
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Body["password"].(string)), bcrypt.DefaultCost)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
@@ -45,6 +46,7 @@ func (u *User) CreateUser(ctx context.Context, req *route.AppReq) route.AppResp 
 
 	user.Password = string(hashedPassword)
 
+	// Create the user in the database.
 	err = u.Store.CreateUser(&user)
 	if err != nil {
 		return map[string]interface{}{
@@ -53,16 +55,14 @@ func (u *User) CreateUser(ctx context.Context, req *route.AppReq) route.AppResp 
 		}
 	}
 
-	// Clear the password field in the response for security purposes
-	user.Password = ""
-
+	user.Password = "" // Clear the password for the response.
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"user":   user,
 	}
 }
 
-// GetUsers retrieves all users.
+// GetUsers retrieves all users from the database.
 func (u *User) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
 	var users []model.User
 	err := u.Store.GetAllUsers(&users)
@@ -72,20 +72,17 @@ func (u *User) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
 			"error":  err.Error(),
 		}
 	}
-
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"users":  users,
 	}
 }
 
-// UpdateUser updates user data based on ID.
+// UpdateUser updates a user in the database based on the given user ID.
 func (u *User) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	id := req.Params["id"]
 	var user model.User
-	query := "id=" + id
-
-	err := u.Store.GetUser(&user, query)
+	err := u.Store.GetUser(&user, "id="+id)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
@@ -93,15 +90,13 @@ func (u *User) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp 
 		}
 	}
 
-	jsonData, err := json.Marshal(req.Body)
+	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
 
-	// parse string to uint
-	val, _ := strconv.ParseUint(id, 10, 64)
+	val, _ := strconv.ParseUint(id, 10, 64) // Convert string to uint.
 	user.Id = uint(val)
 
-	u.Store.UpdateUser(&user, id)
-
+	err = u.Store.UpdateUser(&user, id)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
@@ -115,20 +110,21 @@ func (u *User) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp 
 	}
 }
 
-// DeleteUser removes a user based on ID.
+// DeleteUser removes a user from the database based on the given user ID.
 func (u *User) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
 	id := req.Params["id"]
-	query := "id=" + id
-	err := u.Store.GetUser(&user, query)
+	err := u.Store.GetUser(&user, "id="+id)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
 			"error":  err.Error(),
 		}
 	}
-	jsonData, err := json.Marshal(req.Body)
+
+	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &user)
+
 	err = u.Store.DeleteUser(&user, id)
 	if err != nil {
 		return map[string]interface{}{
@@ -136,38 +132,80 @@ func (u *User) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp 
 			"error":  err.Error(),
 		}
 	}
-
 	return map[string]interface{}{
 		"status":  http.StatusOK,
 		"message": "User with " + id + " is Deleted!",
 	}
 }
 
-// GetUser retrieves a user based on filter query.
+// GetUser retrieves a user from the cache if present, else retrieves from the database.
 func (u *User) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
-	query := req.Query["filter"] + "=" + req.Query["value"]
-	var user model.User
+	var query string
+	if req.Query["filter"] == "email" {
+		query = "email=\"" + req.Query["value"] + "\""
 
-	err := u.Store.GetUser(&user, query)
-	if err != nil {
-		return map[string]interface{}{
-			"status": http.StatusInternalServerError,
-			"error":  err.Error(),
-		}
+	} else {
+
+		query = req.Query["filter"] + "=" + req.Query["value"]
 	}
+	var user *model.User
 
-	return map[string]interface{}{
-		"status": http.StatusOK,
-		"user":   user,
+	userInterface, _ := u.UserCache.Get(query)
+
+	if userInterface == nil {
+		user = &model.User{}
+		err := u.Store.GetUser(user, query)
+		if err != nil {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  err.Error(),
+			}
+		}
+		u.UserCache.Set(query, user, nil) // Set the user in the cache.
+		return map[string]interface{}{
+			"status": http.StatusOK,
+			"user":   user,
+		}
+	} else {
+		userInterface, _ := u.UserCache.Get(query)
+		userMap, ok := userInterface.(map[string]interface{})
+		if !ok {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  errors.New("userInterface is not mapStringInterface"),
+			}
+		}
+
+		// Now you can unmarshal userMap into your user struct.
+		userBytes, err := json.Marshal(userMap)
+		if err != nil {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  errors.New("json Marshal failed!!"),
+			}
+		}
+
+		var user *model.User
+		err = json.Unmarshal(userBytes, &user)
+		if err != nil {
+			return map[string]interface{}{
+				"status": http.StatusInternalServerError,
+				"error":  errors.New("JSON unmarshal failed"),
+			}
+		}
+		return map[string]interface{}{
+			"status": http.StatusOK,
+			"user":   user,
+		}
 	}
 }
 
+// Login verifies the user credentials, generates a JWT token and returns it.
 func (u *User) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := "email=\"" + req.Body["email"].(string) + "\""
 	var user model.User
 
 	err := u.Store.GetUser(&user, query)
-
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
@@ -175,11 +213,7 @@ func (u *User) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 		}
 	}
 
-	storedHash := user.Password
-	receivedPassword := req.Body["password"].(string)
-
-	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(receivedPassword))
-
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Body["password"].(string)))
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusBadRequest,
@@ -187,14 +221,13 @@ func (u *User) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 		}
 	}
 
-	token, err := utils.GenerateJWT(user.Email)
+	token, err := utils.GenerateJWT(&user)
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
 			"error":  "Something went wrong",
 		}
 	}
-
 	return map[string]interface{}{
 		"status": http.StatusOK,
 		"token":  token,

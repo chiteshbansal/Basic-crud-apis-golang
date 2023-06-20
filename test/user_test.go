@@ -5,18 +5,20 @@ import (
 	middleware "first-api/internal/middlewares"
 	model "first-api/internal/models"
 	route "first-api/internal/route"
-	// "first-api/internal/repository"
+	"first-api/pkg/cache"
+
 	"bytes"
 	"first-api/internal/service"
 	"first-api/internal/utils"
-	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockRepo struct holds a mock.Mock field to mock the repository.SongRepo interface. It helps in testing controller functions by mocking the associated helper functions of repo layer.
@@ -73,7 +75,7 @@ func initializeTest() (*MockRepo, service.User, *gin.Engine) {
 	viper.ReadInConfig()
 	gin.SetMode(gin.TestMode)
 	mockRepo := new(MockRepo)
-	userService := service.User{Store: mockRepo}
+	userService := service.User{Store: mockRepo, UserCache: cache.NewRedisCache("localhost:6379", 0, 1000)}
 	return mockRepo, userService, gin.Default()
 }
 
@@ -86,11 +88,13 @@ func TestGetAllSong(t *testing.T) {
 
 	mockRepo, userService, router := initializeTest()
 	route.RegisterRoutes(route.RouteDef{
-		Path:        "/user",
-		Version:     "v1",
-		Method:      "GET",
-		Handler:     userService.GetUsers,
-		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
+		Path:    "/user",
+		Version: "v1",
+		Method:  "GET",
+		Handler: userService.GetUsers,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
+		}},
 	})
 
 	route.InitializeRoutes(router)
@@ -99,8 +103,8 @@ func TestGetAllSong(t *testing.T) {
 		*arg = users
 	})
 
-	req, _ := http.NewRequest("GET", "/v1/user/", nil)
-	token, _ := utils.GenerateJWT("test@test.com")
+	req, _ := http.NewRequest("GET", "/v1/user", nil)
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -129,19 +133,21 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	route.RegisterRoutes(route.RouteDef{
-		Path:        "/user",
-		Version:     "v1",
-		Method:      "POST",
-		Handler:     userService.CreateUser,
-		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT, middleware.ValidateUserData},
+		Path:    "/user",
+		Version: "v1",
+		Method:  "POST",
+		Handler: userService.CreateUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
+		}, middleware.ValidateUserData},
 	})
 	route.InitializeRoutes(router)
 	AppReq, _ := route.StructToMapStringInterface(user)
 	AppReq["confirmPassword"] = "pass123"
 
 	body, _ := json.Marshal(AppReq)
-	req, _ := http.NewRequest("POST", "/v1/user/", bytes.NewBuffer(body))
-	token, _ := utils.GenerateJWT("test@test.com")
+	req, _ := http.NewRequest("POST", "/v1/user", bytes.NewBuffer(body))
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -163,17 +169,19 @@ func TestGetUser(t *testing.T) {
 	user := &model.User{Id: 1, Name: "test user", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
 
 	route.RegisterRoutes(route.RouteDef{
-		Path:        "/user/filter",
-		Version:     "v1",
-		Method:      "GET",
-		Handler:     userService.GetUser,
-		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
+		Path:    "/user/filter",
+		Version: "v1",
+		Method:  "GET",
+		Handler: userService.GetUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
+		}},
 	})
 	route.InitializeRoutes(router)
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
-	req, _ := http.NewRequest("GET", "/v1/user/filter/?filter=id&value=1", nil)
-	token, _ := utils.GenerateJWT("test@test.com")
+	req, _ := http.NewRequest("GET", "/v1/user/filter?filter=id&value=1", nil)
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -199,11 +207,13 @@ func TestGetUser(t *testing.T) {
 func TestUpdateSong(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
 	route.RegisterRoutes(route.RouteDef{
-		Path:        "/user/:id",
-		Version:     "v1",
-		Method:      "PUT",
-		Handler:     userService.UpdateUser,
-		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT, middleware.ValidateUserData},
+		Path:    "/user/:id",
+		Version: "v1",
+		Method:  "PUT",
+		Handler: userService.UpdateUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache, "user")
+		}, middleware.ValidateUserData},
 	})
 	route.InitializeRoutes(router)
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
@@ -214,8 +224,8 @@ func TestUpdateSong(t *testing.T) {
 	AppReq, _ := route.StructToMapStringInterface(user)
 
 	body, _ := json.Marshal(AppReq)
-	req, _ := http.NewRequest("PUT", "/v1/user/1/", bytes.NewBuffer(body))
-	token, _ := utils.GenerateJWT("test@test.com")
+	req, _ := http.NewRequest("PUT", "/v1/user/1", bytes.NewBuffer(body))
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
@@ -232,11 +242,13 @@ func TestUpdateSong(t *testing.T) {
 func TestDeleteUser(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
 	route.RegisterRoutes(route.RouteDef{
-		Path:        "/user/:id",
-		Version:     "v1",
-		Method:      "DELETE",
-		Handler:     userService.DeleteUser,
-		Middlewares: []gin.HandlerFunc{middleware.VerifyJWT},
+		Path:    "/user/:id",
+		Version: "v1",
+		Method:  "DELETE",
+		Handler: userService.DeleteUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
+			middleware.VerifyJWT(ctx, userService.UserCache, "admin")
+		}},
 	})
 	route.InitializeRoutes(router)
 
@@ -244,8 +256,8 @@ func TestDeleteUser(t *testing.T) {
 
 	mockRepo.On("DeleteUser", mock.AnythingOfType("*model.User"), "1").Return(nil)
 
-	req, _ := http.NewRequest("DELETE", "/v1/user/1/", nil)
-	token, _ := utils.GenerateJWT("test@test.com")
+	req, _ := http.NewRequest("DELETE", "/v1/user/1", nil)
+	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
 	req.Header.Set("Authorization", token)
