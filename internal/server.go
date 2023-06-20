@@ -23,12 +23,12 @@ func RegisterRoutes(server *gin.Engine) {
 	// Register GET route to retrieve all users.
 
 	userCache := cache.NewRedisCache("localhost:6379", 0, 1000)
-	rateLimiterCache := cache.NewRedisCache("localhost:6379", 1, 0)
+	rateLimiterCache := cache.NewRedisCache("localhost:6379", 1, 1000)
 
-	ratelimiter.NewTokenBucket(100, 1, time.Now())
+	tb := ratelimiter.NewTokenBucket(100, 1, time.Now())
 	server.Use(func(ctx *gin.Context) {
 		fmt.Println("using the ratelimiter middleware")
-		middleware.RateLimitMiddleware(ctx, rateLimiterCache, ratelimiter.GetTokenBucket())
+		middleware.RateLimitMiddleware(ctx, rateLimiterCache, tb)
 	})
 
 	userService := &service.User{

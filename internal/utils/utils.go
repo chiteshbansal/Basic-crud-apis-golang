@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/gob"
 	model "first-api/internal/models"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -21,4 +24,14 @@ func GenerateJWT(user *model.User) (string, error) {
 		return " ", err
 	}
 	return tokenString, nil
+}
+
+func InterfaceToBytes(data interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	err := encoder.Encode(data)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding data: %v", err)
+	}
+	return buf.Bytes(), nil
 }
