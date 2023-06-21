@@ -46,7 +46,7 @@ func (us *UserStore) GetAllUsers(user *[]model.User) error {
 
 // GetUser fetches a user by the given query from the database.
 func (us *UserStore) GetUser(user *model.User, query string) (err error) {
-	if err = db.DB.Select("-password").Where(query).First(user).Error; err != nil {
+	if err = db.DB.Select("id,name,email,phone,address,role").Where(query).First(user).Error; err != nil {
 		return &CustomError{Message: "User Not found "}
 	}
 	return nil
