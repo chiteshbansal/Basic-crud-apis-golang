@@ -4,10 +4,7 @@ import (
 	"first-api/pkg/cache"
 	"fmt"
 	"math"
-	"sync"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -18,7 +15,6 @@ type TokenBucket struct {
 	Limit    int
 	Tokens   int
 	Rate     int
-	MU       sync.Mutex
 	Duration time.Time
 }
 
@@ -34,12 +30,14 @@ func NewTokenBucket(limit, rate int, duration time.Time) *TokenBucket {
 
 // Take attempts to take a token from the TokenBucket.
 // Returns true if a token is taken, false otherwise.
-func (tb *TokenBucket) Take(c *gin.Context, redisClient cache.UserCache) bool {
-	tb.MU.Lock()
-	defer tb.MU.Unlock()
+func (tb *TokenBucket) IsTotalRequestAllowed(redisClient cache.UserCache) bool {
+
+	key := "token_bucket"
+	mutex := redisClient.GetMutex(key)
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	// Key to identify the token bucket in Redis
-	key := "token_bucket"
 
 	now := time.Now()
 
@@ -106,9 +104,8 @@ func (tb *TokenBucket) refill() {
 	tb.Duration = now
 }
 
-func (tb *TokenBucket) IsRequestAllowed(tokens int) bool {
-	tb.MU.Lock()
-	defer tb.MU.Unlock()
+func (tb *TokenBucket) IsClientRequestAllowed(tokens int) bool {
+
 	tb.refill()
 	fmt.Println("client tokens", tb.Tokens)
 	if tb.Tokens >= tokens {
