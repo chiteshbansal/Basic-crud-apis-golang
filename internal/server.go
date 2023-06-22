@@ -20,10 +20,10 @@ import (
 // RegisterRoutes function registers routes for the user service.
 // RegisterRoutes function registers routes for the user service.
 func RegisterRoutes(server *gin.Engine) {
-	// Register GET route to retrieve all users.
 
-	userCache := cache.NewRedisCache("localhost:6379", 0, 1000)
-	rateLimiterCache := cache.NewRedisCache("localhost:6379", 1, 1000)
+	userCache := cache.GetRateLimiterCache()
+
+	rateLimiterCache := cache.GetRateLimiterCache()
 
 	tb := ratelimiter.NewTokenBucket(100, 1, time.Now())
 	server.Use(func(ctx *gin.Context) {
@@ -40,6 +40,8 @@ func RegisterRoutes(server *gin.Engine) {
 		Store:     &repository.PostStore{},
 		UserCache: userCache,
 	}
+
+	// Register GET route to retrieve all users.
 	route.RegisterRoutes(route.RouteDef{
 		Path:    "/user",
 		Version: "v1",

@@ -71,16 +71,24 @@ func (m *MockRepo) DeleteUser(b *model.User, id string) (err error) {
 func initializeTest() (*MockRepo, service.User, *gin.Engine) {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
+
 	gin.SetMode(gin.TestMode)
+
 	mockRepo := new(MockRepo)
-	userService := service.User{Store: mockRepo, UserCache: cache.NewRedisCache("localhost:6379", 0, 1)}
+	userService := service.User{
+		Store:     mockRepo,
+		UserCache: cache.GetRateLimiterCache(),
+	}
+
 	return mockRepo, userService, gin.Default()
 }
+
 // // TestGetSongById function tests the GetSongById function of Controller
 type Response struct {
 	Status int        `json:"status"`
 	User   model.User `json:"user"`
 }
+
 // TestGetAllUsers function tests the GetAllUsers function of Controller.
 func TestGetAllUsers(t *testing.T) {
 	users := []model.User{

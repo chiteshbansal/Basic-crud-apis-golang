@@ -16,13 +16,10 @@ func VerifyJWT(ctx *gin.Context, cache cache.UserCache, role string) {
 	authHeader := ctx.GetHeader("Authorization")
 	email := ctx.GetHeader("X-User-Email")
 
-	viper.SetConfigFile("../.env")
-	viper.ReadInConfig()
-
 	if authHeader != "" {
 		tokenString := strings.Split(authHeader, "Bearer ")[1]
-		// Replace "YOUR_SECRET_KEY" with your actual secret key
-		secretKey := []byte(viper.GetString("SECRET_KEY"))
+		// Replace "YOUR_AUTH_KEY" with your actual secret key
+		secretKey := []byte(viper.GetString("AUTH_KEY"))
 
 		// Check if the token is present in the cache.
 		if user, _ := cache.Get(tokenString); user != nil {

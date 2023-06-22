@@ -4,7 +4,6 @@ import (
 	middleware "first-api/internal/middlewares"
 	"first-api/internal/ratelimiter"
 	"first-api/pkg/cache"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +15,7 @@ import (
 
 // TestTokenBucketMiddleware is a test function to verify the behavior of the rate limiter middleware.
 func TestTokenBucketMiddleware(t *testing.T) {
-	rateLimiterCache := cache.NewRedisCache("localhost:6379", 1, 1000)
+	rateLimiterCache := cache.GetRateLimiterCache()
 
 	// Create a new TokenBucket and set the initial token count in the cache
 
@@ -25,7 +24,6 @@ func TestTokenBucketMiddleware(t *testing.T) {
 	// Create a new Gin router and apply the middleware
 	router := gin.New()
 	router.Use(func(ctx *gin.Context) {
-		fmt.Println("Using the ratelimiter middleware")
 		middleware.RateLimitMiddleware(ctx, rateLimiterCache, tb)
 	})
 

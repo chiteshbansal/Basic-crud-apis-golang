@@ -19,7 +19,7 @@ func GenerateJWT(user *model.User) (string, error) {
 	claims["user"] = user.Email
 	claims["role"] = user.Role
 	claims["id"] = user.Id
-	tokenString, err := token.SignedString([]byte((viper.GetString("SECRET_KEY"))))
+	tokenString, err := token.SignedString([]byte((viper.GetString("AUTH_KEY"))))
 	if err != nil {
 		return " ", err
 	}
