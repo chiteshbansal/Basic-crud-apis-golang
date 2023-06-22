@@ -10,7 +10,6 @@ import (
 	route "first-api/internal/route"
 	"first-api/internal/utils"
 	"first-api/pkg/cache"
-	"fmt"
 	"net/http"
 	"strconv"
 
