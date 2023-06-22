@@ -30,6 +30,42 @@ To run this project locally, follow these steps:
 
 6. Run the application: Run the application using the `go run` command.
 
+## Environment Variables
+
+To configure the application, you need to set the following environment variables in the `.env` file:
+
+```plaintext
+PORT=<port_number>
+HOST=<host>
+USERNAME=<username>
+PASSWORD=<password>
+DBNAME=<database_name>
+AUTH_KEY=<authentication_key>
+REDIS_HOST=<redis_host>
+REDIS_PASSWORD=<redis_password>
+USER_CACHE_DB=<user_cache_database_number>
+RATELIMITER_CACHE_DB=<ratelimiter_cache_database_number>
+USER_CACHE_EXPTIME=<user_cache_expiry_time>
+RATELIMITER_CACHE_EXPTIME=<ratelimiter_cache_expiry_time>
+
+
+Replace the placeholders with the actual values for your environment. Here's a brief explanation of each variable:
+
+    PORT: The port number to run the application on.
+    HOST: The host of the MySQL database.
+    USERNAME: The username for the MySQL database connection.
+    PASSWORD: The password for the MySQL database connection.
+    DBNAME: The name of the MySQL database.
+    AUTH_KEY: The secret key used for JWT authentication.
+    REDIS_HOST: The host and port of the Redis server.
+    REDIS_PASSWORD: The password for the Redis server (leave empty if not required).
+    USER_CACHE_DB: The Redis database number for caching user data.
+    RATELIMITER_CACHE_DB: The Redis database number for rate limiter data.
+    USER_CACHE_EXPTIME: The expiry time in milliseconds for the user cache.
+    RATELIMITER_CACHE_EXPTIME: The expiry time in milliseconds for the rate limiter cache.
+
+Make sure to adjust these values according to your environment.
+
 ## Features
 
 ### User routes
@@ -48,13 +84,9 @@ The API provides the following user-related routes:
 
 - POST `/v1/user/login`: Login route to authenticate a user.
 
-### Middlewares
+## API Documentation
 
-The API uses the following middlewares:
-
-- `ValidateUserData`: Validates incoming user data from the request body.
-
-- `VerifyJWT`: Verifies the JWT token in the request header for authentication.
+Please refer to the [API documentation](https://documenter.getpostman.com/view/27547278/2s93sdZsPu) for detailed information about the available endpoints, request/response formats, and examples.
 
 ### Caching
 
