@@ -9,7 +9,6 @@ import (
 	"first-api/internal/repository"
 	route "first-api/internal/route"
 	"first-api/pkg/cache"
-	"fmt"
 	"net/http"
 	// "strconv"
 )
@@ -126,7 +125,7 @@ func (u *Post) DeletePost(ctx context.Context, req *route.AppReq) route.AppResp 
 
 	userId := req.Body["userId"]
 	userRole := req.Body["role"]
-	fmt.Println("updating post")
+
 	if userRole != "admin" && userId != post.CreatorId {
 		return map[string]interface{}{
 			"status":  http.StatusUnauthorized,
@@ -165,7 +164,7 @@ func (ps *Post) UpdatePost(ctx context.Context, req *route.AppReq) route.AppResp
 	}
 	userId := req.Body["userId"]
 	userRole := req.Body["role"]
-	fmt.Println("updating post")
+
 	if userRole != "admin" && userId != post.CreatorId {
 		return map[string]interface{}{
 			"status":  http.StatusUnauthorized,
@@ -175,9 +174,6 @@ func (ps *Post) UpdatePost(ctx context.Context, req *route.AppReq) route.AppResp
 
 	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &post)
-	fmt.Println(post)
-	// val, _ := strconv.ParseUint(id, 10, 64) // Convert string to uint.
-	// post.Id = uint(val)
 
 	err = ps.Store.UpdatePost(&post)
 	if err != nil {
@@ -207,7 +203,6 @@ func (ps *Post) AddComment(ctx context.Context, req *route.AppReq) route.AppResp
 	var newComment model.Comment
 	jsonData, _ := json.Marshal(req.Body["comment"])
 	json.Unmarshal(jsonData, &newComment)
-	fmt.Println(post)
 	post.Comments = append(post.Comments, newComment)
 
 	err = ps.Store.UpdatePost(&post)

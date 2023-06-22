@@ -105,12 +105,12 @@ func (tb *TokenBucket) refill() {
 }
 
 func (tb *TokenBucket) IsClientRequestAllowed(tokens int) bool {
-
 	tb.refill()
-	fmt.Println("client tokens", tb.Tokens)
+
 	if tb.Tokens >= tokens {
 		tb.Tokens = tb.Tokens - tokens
 		return true
 	}
+
 	return false
 }

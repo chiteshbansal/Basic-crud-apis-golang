@@ -23,7 +23,6 @@ func RateLimitMiddleware(c *gin.Context, redisClient cache.UserCache, tb *rateli
 			})
 			return
 		}
-		fmt.Println("clientID:", clientID)
 		if !clientTB.IsClientRequestAllowed(1) {
 			fmt.Println("too many request by ", clientID)
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{

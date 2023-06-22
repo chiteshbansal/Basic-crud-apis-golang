@@ -155,7 +155,6 @@ func (u *User) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	userInterface, _ := u.UserCache.Get(query)
 
 	if userInterface == nil {
-		fmt.Println("calling")
 		user = &model.User{}
 		err := u.Store.GetUser(user, query)
 		if err != nil {
@@ -171,7 +170,6 @@ func (u *User) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
 		}
 	} else {
 		userInterface, _ := u.UserCache.Get(query)
-		fmt.Println(userInterface)
 		userMap, ok := userInterface.(map[string]interface{})
 		if !ok {
 			return map[string]interface{}{

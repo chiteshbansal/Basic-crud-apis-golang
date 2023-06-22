@@ -30,7 +30,6 @@ func GetClientBucket(identifier string, usertype string, redisClient cache.UserC
 		clientBucketMap = make(map[string]*TokenBucket)
 	} else {
 		if jsonString, ok := result.(string); ok {
-			fmt.Println("json string", jsonString)
 			err := json.Unmarshal([]byte(jsonString), &clientBucketMap)
 			if err != nil {
 				fmt.Println("Error unmarshaling JSON:", err)
