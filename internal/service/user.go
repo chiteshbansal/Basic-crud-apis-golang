@@ -83,7 +83,7 @@ func (u *User) GetUsers(ctx context.Context, req *route.AppReq) route.AppResp {
 func (u *User) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	id := req.Params["id"]
 	var user model.User
-	err := u.Store.GetUser(&user, "id="+id)
+	err := u.Store.GetUser(&user, "id="+id, "id,name,email,phone,address,role")
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
@@ -115,7 +115,7 @@ func (u *User) UpdateUser(ctx context.Context, req *route.AppReq) route.AppResp 
 func (u *User) DeleteUser(ctx context.Context, req *route.AppReq) route.AppResp {
 	var user model.User
 	id := req.Params["id"]
-	err := u.Store.GetUser(&user, "id="+id)
+	err := u.Store.GetUser(&user, "id="+id, "id,name,email,phone,address,role")
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusNotFound,
@@ -155,7 +155,7 @@ func (u *User) GetUser(ctx context.Context, req *route.AppReq) route.AppResp {
 
 	if userInterface == nil {
 		user = &model.User{}
-		err := u.Store.GetUser(user, query)
+		err := u.Store.GetUser(user, query, "id,name,email,phone,address,role")
 		if err != nil {
 			return map[string]interface{}{
 				"status": http.StatusInternalServerError,
@@ -206,14 +206,13 @@ func (u *User) Login(ctx context.Context, req *route.AppReq) route.AppResp {
 	query := "email=\"" + req.Body["email"].(string) + "\""
 	var user model.User
 
-	err := u.Store.GetUser(&user, query)
+	err := u.Store.GetUser(&user, query,"id,name,email,phone,address,role,password")
 	if err != nil {
 		return map[string]interface{}{
 			"status": http.StatusInternalServerError,
 			"error":  err.Error(),
 		}
 	}
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Body["password"].(string)))
 	if err != nil {
 		return map[string]interface{}{

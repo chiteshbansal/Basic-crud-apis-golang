@@ -10,7 +10,6 @@ import (
 	route "first-api/internal/route"
 	"first-api/internal/service"
 	cache "first-api/pkg/cache"
-	"fmt"
 	"time"
 
 	// Import third party packages
@@ -27,7 +26,6 @@ func RegisterRoutes(server *gin.Engine) {
 
 	tb := ratelimiter.NewTokenBucket(100, 1, time.Now())
 	server.Use(func(ctx *gin.Context) {
-		fmt.Println("using the ratelimiter middleware")
 		middleware.RateLimitMiddleware(ctx, rateLimiterCache, tb)
 	})
 
@@ -60,7 +58,7 @@ func RegisterRoutes(server *gin.Engine) {
 		Version:     "v1",
 		Method:      "POST",
 		Handler:     userService.CreateUser,
-		Middlewares: []gin.HandlerFunc{middleware.ValidateUserData},
+		Middlewares: []gin.HandlerFunc{middleware.ValidateCreateUser},
 	})
 
 	// Register PUT route to update a user. Includes a middleware to validate user data.
@@ -71,7 +69,7 @@ func RegisterRoutes(server *gin.Engine) {
 		Handler: userService.UpdateUser,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
 			middleware.VerifyJWT(ctx, userService.UserCache, "admin")
-		}, middleware.ValidateUserData},
+		}, middleware.ValidateUpdateUser},
 	})
 
 	// Register DELETE route to remove a user.
@@ -100,6 +98,7 @@ func RegisterRoutes(server *gin.Engine) {
 		Version: "v1",
 		Method:  "POST",
 		Handler: userService.Login,
+		Middlewares: []gin.HandlerFunc{middleware.ValidateLogin},
 	})
 
 	// Post routes

@@ -10,7 +10,7 @@ import (
 type UserStorer interface {
 	CreateUser(user *model.User) error
 	GetAllUsers(user *[]model.User) error
-	GetUser(user *model.User, query string) error
+	GetUser(user *model.User, query string,fields string) error
 	UpdateUser(user *model.User, query string) error
 	DeleteUser(user *model.User, query string) error
 }
@@ -45,8 +45,8 @@ func (us *UserStore) GetAllUsers(user *[]model.User) error {
 }
 
 // GetUser fetches a user by the given query from the database.
-func (us *UserStore) GetUser(user *model.User, query string) (err error) {
-	if err = db.DB.Select("id,name,email,phone,address,role").Where(query).First(user).Error; err != nil {
+func (us *UserStore) GetUser(user *model.User, query string, fields string) (err error) {
+	if err = db.DB.Select(fields).Where(query).First(user).Error; err != nil {
 		return &CustomError{Message: "User Not found "}
 	}
 	return nil
