@@ -94,10 +94,10 @@ func RegisterRoutes(server *gin.Engine) {
 		}},
 	})
 	route.RegisterRoutes(route.RouteDef{
-		Path:    "/user/login",
-		Version: "v1",
-		Method:  "POST",
-		Handler: userService.Login,
+		Path:        "/user/login",
+		Version:     "v1",
+		Method:      "POST",
+		Handler:     userService.Login,
 		Middlewares: []gin.HandlerFunc{middleware.ValidateLogin},
 	})
 
@@ -113,6 +113,7 @@ func RegisterRoutes(server *gin.Engine) {
 			func(ctx *gin.Context) {
 				middleware.VerifyJWT(ctx, userService.UserCache, "user")
 			},
+			middleware.ValidateCreatePost,
 		},
 	})
 
@@ -161,7 +162,9 @@ func RegisterRoutes(server *gin.Engine) {
 		Handler: postService.UpdatePost,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
 			middleware.VerifyJWT(ctx, postService.UserCache, "user")
-		}},
+		},
+			middleware.ValidateUpdatePost,
+		},
 	})
 
 	// comment on post
@@ -172,6 +175,8 @@ func RegisterRoutes(server *gin.Engine) {
 		Handler: postService.AddComment,
 		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
 			middleware.VerifyJWT(ctx, postService.UserCache, "admin")
-		}},
+		},
+			middleware.AddComment,
+		},
 	})
 }

@@ -3,7 +3,6 @@ package test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -296,7 +295,6 @@ func TestGetUser(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 
 	var responseUser Response
-	fmt.Println(resp)
 	err := json.Unmarshal(bodyBytes, &responseUser)
 	// If unmarshaling didn't return an error, check that the user fields match.
 	if assert.NoError(t, err) {

@@ -21,12 +21,12 @@ func VerifyJWT(ctx *gin.Context, cache cache.UserCache, role string) {
 		// Replace "YOUR_AUTH_KEY" with your actual secret key
 		secretKey := []byte(viper.GetString("AUTH_KEY"))
 
-		// Check if the token is present in the cache.
-		if user, _ := cache.Get(tokenString); user != nil {
-			// If the token is found in the cache, pass the request to the next middleware function.
-			ctx.Next()
-			return
-		}
+		// // Check if the token is present in the cache.
+		// if user, _ := cache.Get(tokenString); user != nil {
+		// 	// If the token is found in the cache, pass the request to the next middleware function.
+		// 	ctx.Next()
+		// 	return
+		// }
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			// Validate the signing method
@@ -73,7 +73,6 @@ func VerifyJWT(ctx *gin.Context, cache cache.UserCache, role string) {
 			remainingTime := time.Until(expTime)
 
 			cache.Set(tokenString, "true", &remainingTime)
-
 			userId, _ := claims["id"]
 			ctx.Set("userId", userId)
 			ctx.Set("role", userRole)

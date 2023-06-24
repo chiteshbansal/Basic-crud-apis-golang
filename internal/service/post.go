@@ -24,7 +24,6 @@ func (u *Post) CreatePost(ctx context.Context, req *route.AppReq) route.AppResp 
 	var post model.Post
 	jsonData, _ := json.Marshal(req.Body)
 	json.Unmarshal(jsonData, &post)
-
 	post.CreatorId = uint(req.Body["userId"].(float64))
 
 	// Create the post in the database.
@@ -41,7 +40,7 @@ func (u *Post) CreatePost(ctx context.Context, req *route.AppReq) route.AppResp 
 	}
 }
 
-// GetUsers retrieves all users from the database.
+// GetPosts retrieves all posts from the database.
 func (u *Post) GetPosts(ctx context.Context, req *route.AppReq) route.AppResp {
 	var posts []model.Post
 	err := u.Store.GetAllPosts(&posts)

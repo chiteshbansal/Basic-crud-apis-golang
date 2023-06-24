@@ -51,3 +51,4 @@ func GetClientIdentity(c *gin.Context) string {
 	data := fmt.Sprintf("%s-%s-%s", ip, url,method)
 	return data
 }
+
