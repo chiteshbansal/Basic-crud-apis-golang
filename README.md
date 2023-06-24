@@ -47,7 +47,7 @@ USER_CACHE_DB=<user_cache_database_number>
 RATELIMITER_CACHE_DB=<ratelimiter_cache_database_number>
 USER_CACHE_EXPTIME=<user_cache_expiry_time>
 RATELIMITER_CACHE_EXPTIME=<ratelimiter_cache_expiry_time>
-
+```
 
 Replace the placeholders with the actual values for your environment. Here's a brief explanation of each variable:
 
@@ -66,24 +66,6 @@ Replace the placeholders with the actual values for your environment. Here's a b
 
 Make sure to adjust these values according to your environment.
 
-## Features
-
-### User routes
-
-The API provides the following user-related routes:
-
-- GET `/v1/user`: Retrieve all users.
-
-- POST `/v1/user`: Create a new user.
-
-- PUT `/v1/user/:id`: Update a user.
-
-- DELETE `/v1/user/:id`: Delete a user.
-
-- GET `/v1/user/filter`: Retrieve a user based on certain filters.
-
-- POST `/v1/user/login`: Login route to authenticate a user.
-
 ## API Documentation
 
 Please refer to the [API documentation](https://documenter.getpostman.com/view/27547278/2s93sdZsPu) for detailed information about the available endpoints, request/response formats, and examples.
@@ -99,14 +81,7 @@ The API implements rate limiting to prevent abuse and protect against excessive 
 ## Testing
 
 The project includes a suite of unit tests, found in the `test` directory. To run these tests, navigate to the root directory of the project and run `go test ./...`.
+.
 
-## Future Improvements
 
-The project is a simple demonstration of a RESTful API in Go. Possible future improvements include adding more endpoints, improving error handling, adding integration tests, and enhancing security features.
-
-## Contributions
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](#) for any open tasks or create a new issue for suggestions.
-
-## License
 
