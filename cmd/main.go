@@ -7,6 +7,7 @@ import (
 	server "first-api/internal"
 	db "first-api/internal/database"
 	route "first-api/internal/route"
+	"log"
 
 	// Import third party packages
 	"github.com/gin-gonic/gin"
@@ -21,16 +22,22 @@ func init() {
 }
 
 func main() {
-	// initialize databse
-	db.NewDB()
+	// Initialize database
+	err := db.NewDB()
+	if err != nil {
+		// Handle the error in an appropriate way, such as logging it or exiting the program
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
 	// Make sure to close the database connection when the main function exits
 	defer db.DB.Close()
+
 	// Create a new gin engine
 	r := gin.Default()
 
 	// Register routes
-	server.RegisterRoutes()   // register user service related routes
+	server.RegisterRoutes(r) // register user service related routes
+
 	route.InitializeRoutes(r) // initialize other routes
 
 	// Run the gin engine

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	model "first-api/internal/models"
 	"fmt"
 
@@ -19,21 +20,22 @@ type config struct {
 	Password string
 }
 
-func NewDB() {
+func NewDB() error {
 	// Connect to the MySQL database using gorm
 	var err error
 	DB, err = gorm.Open("mysql", DbURL(BuildConfig()))
 	if err != nil {
 		fmt.Println("Status:", err)
+		return errors.New("database connection failed!")
 	}
 
 	// Automigrate user model, this will create the user table in the database
 	DB.AutoMigrate(&model.User{}, &model.Post{}, &model.Comment{})
+	return nil
 }
 
 func BuildConfig() *config {
 
-	fmt.Println(viper.GetString("DBNAME"))
 	dbConfig := config{
 		Host:     viper.GetString("HOST"),
 		Port:     viper.GetInt("PORT"),
