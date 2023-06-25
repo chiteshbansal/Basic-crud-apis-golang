@@ -33,9 +33,6 @@ func NewTokenBucket(limit, rate int, duration time.Time) *TokenBucket {
 func (tb *TokenBucket) IsTotalRequestAllowed(redisClient cache.UserCache) bool {
 
 	key := "token_bucket"
-	mutex := redisClient.GetMutex(key)
-	mutex.Lock()
-	defer mutex.Unlock()
 
 	// Key to identify the token bucket in Redis
 
@@ -80,7 +77,10 @@ func (tb *TokenBucket) IsTotalRequestAllowed(redisClient cache.UserCache) bool {
 	if result > 0 {
 		// Decrement the token count in Redis
 		result--
+		mutex := redisClient.GetMutex(key)
+		mutex.Lock()
 		err := redisClient.Set(key, result, nil)
+		defer mutex.Unlock()
 		if err != nil {
 			fmt.Println("Failed to update token count in Redis:", err)
 		}
