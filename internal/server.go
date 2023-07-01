@@ -5,10 +5,13 @@ import (
 	// Import custom packages
 
 	middleware "first-api/internal/middlewares"
+	"first-api/internal/ratelimiter"
 	"first-api/internal/repository"
 	route "first-api/internal/route"
 	"first-api/internal/service"
 	cache "first-api/pkg/cache"
+	"fmt"
+	"time"
 
 	// Import third party packages
 	"github.com/gin-gonic/gin"
@@ -16,10 +19,18 @@ import (
 
 // RegisterRoutes function registers routes for the user service.
 // RegisterRoutes function registers routes for the user service.
-func RegisterRoutes() {
-	// Register GET route to retrieve all users.
+func RegisterRoutes(server *gin.Engine) {
 
-	userCache := cache.NewRedisCache("localhost:6379", 0, 1000)
+	userCache := cache.GetRateLimiterCache()
+
+	rateLimiterCache := cache.GetRateLimiterCache()
+
+	tb := ratelimiter.NewTokenBucket(100, 1, time.Now())
+	server.Use(func(ctx *gin.Context) {
+		fmt.Println("using the ratelimiter middleware")
+		middleware.RateLimitMiddleware(ctx, rateLimiterCache, tb)
+	})
+
 	userService := &service.User{
 		Store:     &repository.UserStore{},
 		UserCache: userCache,
@@ -29,6 +40,8 @@ func RegisterRoutes() {
 		Store:     &repository.PostStore{},
 		UserCache: userCache,
 	}
+
+	// Register GET route to retrieve all users.
 	route.RegisterRoutes(route.RouteDef{
 		Path:    "/user",
 		Version: "v1",

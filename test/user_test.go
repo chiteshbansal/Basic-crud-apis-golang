@@ -1,15 +1,8 @@
 package test
 
 import (
-	"encoding/json"
-	middleware "first-api/internal/middlewares"
-	model "first-api/internal/models"
-	route "first-api/internal/route"
-	"first-api/pkg/cache"
-
 	"bytes"
-	"first-api/internal/service"
-	"first-api/internal/utils"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -19,36 +12,41 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	middleware "first-api/internal/middlewares"
+	model "first-api/internal/models"
+	route "first-api/internal/route"
+	"first-api/internal/service"
+	"first-api/internal/utils"
+	"first-api/pkg/cache"
 )
 
-// MockRepo struct holds a mock.Mock field to mock the repository.SongRepo interface. It helps in testing controller functions by mocking the associated helper functions of repo layer.
+// MockRepo struct holds a mock.Mock field to mock the repository.SongRepo interface. It helps in testing controller functions by mocking the associated helper functions of the repo layer.
 type MockRepo struct {
 	mock.Mock
 }
 
-// GetAllSong() mocks the GetAllSong() method of repository.SongRepo interface.
+// GetAllUsers mocks the GetAllUsers method of the repository.SongRepo interface.
 func (m *MockRepo) GetAllUsers(b *[]model.User) error {
 	args := m.Called(b)
 	return args.Error(0)
 }
 
-// AddSong() mocks the AddSong() method of repository.SongRepo interface.
+// CreateUser mocks the CreateUser method of the repository.SongRepo interface.
 func (m *MockRepo) CreateUser(b *model.User) error {
 	args := m.Called(b)
 	return args.Error(0)
 }
 
-// GetSong() mocks the GetSong() method of repository.SongRepo interface.
+// GetUser mocks the GetUser method of the repository.SongRepo interface.
 func (m *MockRepo) GetUser(user *model.User, id string) (err error) {
 	args := m.Called(user, id)
 
-	// if the mock is set to return an error, return it
 	if args.Error(0) != nil {
 		return args.Error(0)
 	}
 
-	// otherwise, set the passed user object fields
-	user.Id = 1
+	user.Id = 2
 	user.Name = "test user"
 	user.Email = "test@gmail.com"
 	user.Phone = "9999999999"
@@ -57,30 +55,42 @@ func (m *MockRepo) GetUser(user *model.User, id string) (err error) {
 	return nil
 }
 
-// UpdateSong() mocks the UpdateSong() method of repository.SongRepo interface.
+// UpdateUser mocks the UpdateUser method of the repository.SongRepo interface.
 func (m *MockRepo) UpdateUser(b *model.User, id string) (err error) {
 	args := m.Called(b, id)
 	return args.Error(0)
 }
 
-// DeleteSong() mocks the DeleteSong() method of repository.SongRepo interface.
+// DeleteUser mocks the DeleteUser method of the repository.SongRepo interface.
 func (m *MockRepo) DeleteUser(b *model.User, id string) (err error) {
 	args := m.Called(b, id)
 	return args.Error(0)
 }
 
-// initializeTest() instantiates a MockRepo and creates a new Controller with this MockRepo as its Repo field. It also creates a new default gin.Engine and returns all three.
+// initializeTest instantiates a MockRepo and creates a new Controller with this MockRepo as its Repo field. It also creates a new default gin.Engine and returns all three.
 func initializeTest() (*MockRepo, service.User, *gin.Engine) {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
+
 	gin.SetMode(gin.TestMode)
+
 	mockRepo := new(MockRepo)
-	userService := service.User{Store: mockRepo, UserCache: cache.NewRedisCache("localhost:6379", 0, 1000)}
+	userService := service.User{
+		Store:     mockRepo,
+		UserCache: cache.GetRateLimiterCache(),
+	}
+
 	return mockRepo, userService, gin.Default()
 }
 
-// TestGetAllSong function tests the GetAllSong function of Controller
-func TestGetAllSong(t *testing.T) {
+// // TestGetSongById function tests the GetSongById function of Controller
+type Response struct {
+	Status int        `json:"status"`
+	User   model.User `json:"user"`
+}
+
+// TestGetAllUsers function tests the GetAllUsers function of Controller.
+func TestGetAllUsers(t *testing.T) {
 	users := []model.User{
 		{Name: "test User 1", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"},
 		{Name: "test user 2", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"},
@@ -88,13 +98,11 @@ func TestGetAllSong(t *testing.T) {
 
 	mockRepo, userService, router := initializeTest()
 	route.RegisterRoutes(route.RouteDef{
-		Path:    "/user",
-		Version: "v1",
-		Method:  "GET",
-		Handler: userService.GetUsers,
-		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache, "user")
-		}},
+		Path:        "/user",
+		Version:     "v1",
+		Method:      "GET",
+		Handler:     userService.GetUsers,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) { middleware.VerifyJWT(ctx, userService.UserCache, "user") }},
 	})
 
 	route.InitializeRoutes(router)
@@ -115,7 +123,7 @@ func TestGetAllSong(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// // TestAddSong function tests the AddSong function of Controller
+// TestCreateUser function tests the CreateUser function of Controller.
 func TestCreateUser(t *testing.T) {
 	user := &model.User{
 		Name:     "test user",
@@ -126,20 +134,17 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	mockRepo, userService, router := initializeTest()
-	// mockRepo.On("CreateUser").Return(nil)
 	mockRepo.On("CreateUser", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		arg := args.Get(0).(*model.User)
 		*arg = *user
 	})
 
 	route.RegisterRoutes(route.RouteDef{
-		Path:    "/user",
-		Version: "v1",
-		Method:  "POST",
-		Handler: userService.CreateUser,
-		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache, "user")
-		}, middleware.ValidateUserData},
+		Path:        "/user",
+		Version:     "v1",
+		Method:      "POST",
+		Handler:     userService.CreateUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) { middleware.VerifyJWT(ctx, userService.UserCache, "user") }, middleware.ValidateUserData},
 	})
 	route.InitializeRoutes(router)
 	AppReq, _ := route.StructToMapStringInterface(user)
@@ -158,29 +163,22 @@ func TestCreateUser(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// // TestGetSongById function tests the GetSongById function of Controller
-type Response struct {
-	Status int        `json:"status"`
-	User   model.User `json:"user"`
-}
-
+// TestGetUser function tests the GetUser function of Controller.
 func TestGetUser(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
-	user := &model.User{Id: 1, Name: "test user", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
+	user := &model.User{Id: 2, Name: "test user", Email: "test@gmail.com", Phone: "9999999999", Address: "abcd efgh ijkl"}
 
 	route.RegisterRoutes(route.RouteDef{
-		Path:    "/user/filter",
-		Version: "v1",
-		Method:  "GET",
-		Handler: userService.GetUser,
-		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache, "user")
-		}},
+		Path:        "/user/filter",
+		Version:     "v1",
+		Method:      "GET",
+		Handler:     userService.GetUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) { middleware.VerifyJWT(ctx, userService.UserCache, "user") }},
 	})
 	route.InitializeRoutes(router)
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
 
-	req, _ := http.NewRequest("GET", "/v1/user/filter?filter=id&value=1", nil)
+	req, _ := http.NewRequest("GET", "/v1/user/filter?filter=id&value=2", nil)
 	token, _ := utils.GenerateJWT(&model.User{Email: "test@test.com", Role: "admin"})
 	token = "Bearer " + token
 
@@ -189,11 +187,11 @@ func TestGetUser(t *testing.T) {
 	resp := httptest.NewRecorder()
 
 	router.ServeHTTP(resp, req)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 
 	var responseUser Response
 
-	err = json.Unmarshal(bodyBytes, &responseUser)
+	err := json.Unmarshal(bodyBytes, &responseUser)
 	// If unmarshaling didn't return an error, check that the user fields match.
 	if assert.NoError(t, err) {
 		assert.Equal(t, user, &responseUser.User)
@@ -203,17 +201,15 @@ func TestGetUser(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// TestUpdateSong function tests the UpdateSong function of Controller
-func TestUpdateSong(t *testing.T) {
+// TestUpdateUser function tests the UpdateUser function of Controller.
+func TestUpdateUser(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
 	route.RegisterRoutes(route.RouteDef{
-		Path:    "/user/:id",
-		Version: "v1",
-		Method:  "PUT",
-		Handler: userService.UpdateUser,
-		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache, "user")
-		}, middleware.ValidateUserData},
+		Path:        "/user/:id",
+		Version:     "v1",
+		Method:      "PUT",
+		Handler:     userService.UpdateUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) { middleware.VerifyJWT(ctx, userService.UserCache, "user") }, middleware.ValidateUserData},
 	})
 	route.InitializeRoutes(router)
 	mockRepo.On("GetUser", mock.AnythingOfType("*model.User"), mock.AnythingOfType("string")).Return(nil)
@@ -238,17 +234,15 @@ func TestUpdateSong(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// TestDeleteSong function tests the DeleteSong function of Controller
+// TestDeleteUser function tests the DeleteUser function of Controller.
 func TestDeleteUser(t *testing.T) {
 	mockRepo, userService, router := initializeTest()
 	route.RegisterRoutes(route.RouteDef{
-		Path:    "/user/:id",
-		Version: "v1",
-		Method:  "DELETE",
-		Handler: userService.DeleteUser,
-		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) {
-			middleware.VerifyJWT(ctx, userService.UserCache, "admin")
-		}},
+		Path:        "/user/:id",
+		Version:     "v1",
+		Method:      "DELETE",
+		Handler:     userService.DeleteUser,
+		Middlewares: []gin.HandlerFunc{func(ctx *gin.Context) { middleware.VerifyJWT(ctx, userService.UserCache, "admin") }},
 	})
 	route.InitializeRoutes(router)
 
@@ -274,5 +268,4 @@ func TestDeleteUser(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, responseUser.Status)
 	mockRepo.AssertExpectations(t)
-
 }
